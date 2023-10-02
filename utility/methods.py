@@ -10,13 +10,13 @@ import pandas as pd
 transpose = lambda data: list(map(list, zip(*data)))
 join = lambda data: [el for row in data for el in row]
 intersect = lambda data1, data2: [el for el in data1 if el in data2]
-to_integer = lambda el: int(el) if el != 'nan' else el   
 mean = lambda data: np.mean(data)
 mode = lambda data: stats.mode(data).mode
 median = lambda data: np.median(data)
 std = lambda data: np.std(data)
 unique = lambda data: list(set(data))
 is_list = lambda data: isinstance(data, (list, range))
+normalize = lambda data: [100 * el / sum(data) for el in data]
 
 def linspace(lower, upper, length = 10): # it returns a lists of numbers from lower to upper with given length
     slope = (upper - lower) / (length - 1) if length > 1 else 0
@@ -34,7 +34,7 @@ def correlate(data):
 
 #correct_index = lambda r, R: max(0, min(correct_index_sign(r, R), R))
 
-correct_index = lambda r, R: r if r >= 0 else r + R
+correct_index = lambda r, R: 0 if r < -R else r + R if r < 0 else R if r > R else r
 correct_left_index = lambda r, R: 0 if r is None else correct_index(r, R)
 correct_right_index = lambda r, R: R if r is None else correct_index(r, R)
 correct_range = lambda r, R: range(R) if r is None else intersect(unique([correct_index(el, R) for el in r]), range(R))
@@ -42,6 +42,7 @@ index_to_range = lambda r, R: range(0, correct_right_index(r, R)) if r >= 0 else
 
 
 nl = '\n'
+sp = ' '
 n = 'nan'
 
 def tabulate_data(data, decimals = 1, grid = False, headers = None):
@@ -69,13 +70,16 @@ def std_datetime(dates):
     return dt.timedelta(seconds = std(dates_to_seconds(dates)))
 
 div = [1, 60, 60, 24, 30.44, 12]
-div = np.cumprod(div)
+div = list(map(float, np.cumprod(div)))
 forms = ['seconds', 'minutes', 'hours', 'days', 'months', 'years']
+
+time_to_string = lambda date, form: date.strftime(form)
 
 def timedelta_to_number(delta, form):
     delta = delta.total_seconds()
     index = forms.index(form)
     return delta / div[index]
 
+timedelta_to_string = lambda delta, form: str(round(timedelta_to_number(delta, form), 1))
 
 

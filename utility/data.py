@@ -50,26 +50,42 @@ class data_class():
         return self.type == 'categorical'
 
 
-    def count(self, el, fun = len, data = None):
-        check_data = self.get_rows()
-        count_data = check_data if data is None else data.get_rows()
-        data = [count_data[i] for i in self.Rows if check_data[i] == el]
-        data = [el for el in data if el != n] if fun != len else data
-        return fun(data)
-
-    def unique(self, nan = True, string = False, fun = len):
-        c = self.counts(nan = nan, fun = fun, data = data)
-        return unique(self.get_rows(nan = nan, string = string))
+    def count(self, n):
+        data = [el for el in self.data if el == n]
+        return len(data)
 
     def nan(self):
         return self.count(n)
 
-    def counts(self, normalize = False, nan = True, fun = len, data = None):
-        u = self.unique(nan)
-        v = np.array([self.count(el, fun = fun, data = data) for el in u])
-        v = 100 * v / sum(v) if normalize else v
-        return sorted(zip(u, v), key = lambda el: el[1], reverse = True)
+    def not_nan(self):
+        return self.rows - self.count(n)
 
+    def unique(self, nan = True, string = False):
+        return unique(self.get_rows(nan = nan, string = string))
+
+    def counts(self, normalize = False, nan = True):
+        u = self.unique(nan)
+        v = [self.count(el) for el in u]
+        v = normalize(v) if normalize else v
+        c = transpose([u, v])
+        return sorted(c, key = lambda el: el[1], reverse = True)
+
+    def select(self, el, data):
+        new = data.empty()
+        new_data = [data.data[row] for row in self.Rows if self.data[row] == el]
+        new.set_data(new_data);
+        return new
+
+    def cross_counts(self, data, normalize = False, nan = True):
+        u = self.unique(nan)
+        v = [self.select(el, data) for el in u]
+        v = [el.not_nan() for el in v] if data.is_categorical() else [el.mean() for el in v] 
+        v = normalize(v) if normalize else v
+        c = transpose([u, v])
+        return sorted(c, key = lambda el: el[1], reverse = True)
+
+    def cross_unique(self, data, nan = True):
+        return [el[0] for el in self.cross_counts(data, 0, nan)]
     
     def copy(self):
         return copy(self)
@@ -77,6 +93,7 @@ class data_class():
     def empty(self):
         new = self.__class__([])
         new.set_name(self.name)
+        new.set_type(self.type)
         return new
 
     def subset(self, rows):
@@ -128,7 +145,7 @@ class categorical_data_class(data_class):
         return new
     
     def to_integer(self):
-        to_int = lambda el: int(el) if el != n else el
+        to_int = lambda el: int(float(el)) if el != n else el
         data = list(map(to_int, self.data))
         new = numerical_data_class(data)
         new.set_name(self.name)
@@ -142,22 +159,19 @@ class categorical_data_class(data_class):
         return new
     
 
-    def print_info(self, normalize = 1, rows = 10, fun = len):
+    def print_info(self, normalize = 1, rows = 10):
         cols = [self.name, '']
-        table = self.counts(normalize, rows, fun = len)[:rows]
+        table = self.counts(normalize, rows)[:rows]
         table = tabulate_data(table, headers = cols, decimals = 1)
         print(table)
 
-    def get_index(self, data = None, fun = len):
-        u = self.unique() if data is None else self.
+    def get_index(self, data = None):
+        u = self.unique() if data is None else self.cross_unique(data)
         return [u.index(el) if el != n else n for el in self.data]
 
     def get_ticks(self):
         u = self.unique(nan = 0)
         return (range(len(u)), u)
-
-    # def to_string(self, el):
-    #     return el
 
 
 class numerical_data_class(data_class):
@@ -170,37 +184,34 @@ class numerical_data_class(data_class):
         self.apply(fun)
 
     def min(self):
-        return min(self.get_rows(nan = False))
+        return min(self.get_rows(nan = False), default = n)
     
     def max(self):
-        return max(self.get_rows(nan = False))
+        return max(self.get_rows(nan = False), default = n)
 
     def span(self):
-        return self.max() - self.min()
+        return self.max() - self.min() if self.rows > 0 else n
 
     def std(self):
-        return std(self.get_rows(nan = False))
+        return std(self.get_rows(nan = False)) if self.rows > 0 else n
     
     def density(self):
         span = self.span()
-        return 100 * self.std() / span if span != 0 else 'inf'
+        return n if span == n else 100 * self.std() / span if span != 0 else 'inf'
 
     def mean(self):
-        return mean(self.get_rows(nan = False))
+        return mean(self.get_rows(nan = False)) if self.rows > 0 else n
 
     def median(self):
-        return median(self.get_rows(nan = False))
+        return median(self.get_rows(nan = False)) if self.rows > 0 else n
     
     def mode(self):
-        return mode(self.get_rows(nan = False))
+        return mode(self.get_rows(nan = False)) if self.rows > 0 else n
 
     def get_info(self, string = False):
         info = [self.name, self.mean(), self.median(), self.mode(), self.std(), self.span(), self.density(), self.nan()]
-        info = [str(el) for el in info] if string else info
+        info = [self.to_string(el) for el in info] if string else info
         return info
-
-    # def to_string(self, el):
-    #     return str(el)
 
     def get_index(self):
         return self.data
@@ -208,6 +219,17 @@ class numerical_data_class(data_class):
     def get_ticks(self):
         t = list(np.linspace(self.min(), self.max(), 5))
         return t, t
+
+    def to_string(self, el):
+        return str(round(el, 1))
+    
+    def __str__(self):
+        out = super().__str__()
+        out  += nl + 'min     ' + self.to_string(self.min())
+        out  += nl + 'max     ' + self.to_string(self.max())
+        out  += nl + 'mean    ' + self.to_string(self.mean())
+        out  += nl + 'std     ' + self.to_string(self.std())
+        return out
 
 
 
@@ -222,20 +244,20 @@ class datetime_data_class(numerical_data_class):
         self.form_delta = form_delta
 
     def std(self):
-        return std_datetime(self.get_rows(nan = False))
+        return std_datetime(self.get_rows(nan = False)) if self.rows > 0 else n
     
     def density(self):
         span = self.span()
-        return 100 * self.std() / span if span != 0 else 'inf'
+        return n if span == n else 100 * self.std() / span if span != 0 else 'inf'
 
     def mean(self):
-        return mean_datetime(self.get_rows(nan = False))
+        return mean_datetime(self.get_rows(nan = False)) if self.rows > 0 else n
 
     def median(self):
-        return median_datetime(self.get_rows(nan = False))
+        return median_datetime(self.get_rows(nan = False)) if self.rows > 0 else n
     
     def mode(self):
-        return mode_datetime(self.get_rows(nan = False))
+        return mode_datetime(self.get_rows(nan = False)) if self.rows > 0 else n
 
     def get_info(self, string = False):
         info = super().get_info(False)
@@ -243,7 +265,7 @@ class datetime_data_class(numerical_data_class):
         return info
 
     def to_string(self, el):
-         return n if el == n else el.strftime(self.form) if isinstance(el, dt.datetime) else timedelta_to_number(el, self.form_delta) if isinstance(el, dt.timedelta) else str(el)
+         return n if el == n else time_to_string(el, self.form) if isinstance(el, dt.datetime) else timedelta_to_string(el, self.form_delta) if isinstance(el, dt.timedelta) else str(round(el, 1))
 
     def get_index(self):
         ref = self.min()
@@ -257,8 +279,12 @@ class datetime_data_class(numerical_data_class):
 
     def empty(self):
         new = self.__class__([], self.form, self.form_delta)
+        new.set_type(self.type)
         new.set_name(self.name)
         return new
+
+    def __str__(self):
+        return super().__str__() + sp + self.form_delta
 
 
 

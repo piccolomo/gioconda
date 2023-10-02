@@ -12,6 +12,7 @@ class matrix_class():
         self.update_dimensions()
 
     def set_matrix(self, matrix):
+        self.m = matrix
         data = [categorical_data_class(data) for data in transpose(matrix)]
         self.set_data(data)
         self.set_names(self.Cols)
@@ -77,7 +78,7 @@ class matrix_class():
         return self.get_col(col).get_rows(rows, nan = nan, string = string)
 
     def get_section(self, rows = None, cols = None, index = False, string = False):
-        data = transpose([self.get_rows(col, rows, string) for col in cols])
+        data = transpose([self.get_rows(col, rows, string = string) for col in cols])
         data = [[rows[i]] + data[i] for i in range(len(rows))] if index else data
         return data
 
@@ -130,8 +131,6 @@ class matrix_class():
     # def apply(self, col, function, *args):
     #     self.get_col(col).apply(function, *args)
 
-
-
     def unique(self, col, nan = True):
         return self.get_col(col).unique(nan = nan)
     
@@ -157,7 +156,9 @@ class matrix_class():
 
     def plot(self, col1, col2):
         c1, c2 = self.get_col(col1), self.get_col(col2)
-        x, y = c1.get_index(), c2.get_index()
+        x = c1.get_index()
+        data = c1 if c1.is_categorical() else None
+        y = c2.get_index(data)
         xy = [el for el in transpose([x, y]) if n not in el]
         x, y = transpose(xy)
         plt.clf()
@@ -189,7 +190,7 @@ class matrix_class():
         
 
     def correct_cols(self, cols):
-        return self.get_cols_indexes(cols)  if is_list(cols) or cols is None else index_to_range(self.get_col_index(cols), self.cols)
+        return self.get_cols_indexes(cols) if is_list(cols) or cols is None else index_to_range(self.get_col_index(cols), self.cols)
         
     def correct_rows(self, rows):
         return correct_range(rows, self.rows) if is_list(rows) or rows is None else index_to_range(rows, self.rows)

@@ -1,6 +1,7 @@
 import pickle
 import plotext as plx
 from utility.matrix import matrix_class
+from utility.methods import nl
 
 # File Utilities
 base_folder = plx.parent_folder(plx.script_folder())
@@ -16,6 +17,7 @@ def read_lines(file_name):
     print("reading text lines in", path)
     with open(path, 'r', encoding = "utf-8") as file:
         text = file.readlines()
+    text = [line for line in text if line != nl]
     print("text lines read!\n")
     return text
 
@@ -26,10 +28,10 @@ def read_data(file_name, delimiter = ',', header = False):
     lines = read_lines(file_name)
     print('loading data')
     matrix = split_lines(lines, delimiter)
-    table = data[1:] if header else matrix
+    table = matrix[1:] if header else matrix
     data = matrix_class()
-    data.set_matrix(matrix)
-    data.set_names(data[0]) if header else None
+    data.set_matrix(table)
+    data.set_names(matrix[0]) if header else None
     print('data loaded!\n')
     return data
 
