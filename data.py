@@ -1,4 +1,4 @@
-from utility.methods import *
+from bongo.methods import *
 
 class data_class():
     def __init__(self, data):

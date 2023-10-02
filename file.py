@@ -1,7 +1,7 @@
 import pickle
 import plotext as plx
-from utility.matrix import matrix_class
-from utility.methods import nl
+from bongo.matrix import matrix_class
+from bongo.methods import nl
 
 # File Utilities
 base_folder = plx.parent_folder(plx.script_folder())

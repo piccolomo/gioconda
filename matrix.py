@@ -1,5 +1,5 @@
-from utility.data import *
-from utility.methods import *
+from bongo.data import *
+from bongo.methods import *
 
 
 class matrix_class():
