@@ -61,6 +61,11 @@ class matrix_class():
         names = ['i'] if index else []
         return names + [self.get_name(col) for col in self.get_cols_indexes(cols)]
 
+    def print_names(self):
+        table = transpose([self.Cols, self.get_names()])
+        table = tabulate_data(table, grid = 0, headers = ['i', 'column'])
+        print(table)
+
     def get_type(self, col):
         return self.get_col(col).type
 
@@ -144,7 +149,7 @@ class matrix_class():
         print(table)
 
     def describe_datetime(self, form = 'days'):
-        cols = ['i', 'col', 'mean', 'median', 'mode', 'std', 'span', 'density', n]
+        cols = ['i', 'col', 'mean', 'median', 'mode', 'std', 'span', 'density']
         info = [[self.get_col_index(col)] + self.get_col(col).get_info(string = True) for col in self.get_datetime_cols()]
         table = tabulate_data(info, headers = cols, decimals = 1)
         print(table)
@@ -168,16 +173,17 @@ class matrix_class():
         plt.ylabel(c2.name)
         plt.show()
         
-    def crosstab(self, col1, col2, length = 5):
+    def crosstab(self, col1, col2, length = 5, norm = True):
         c1, c2 = self.get_col(col1), self.get_col(col2)
-        unique1 = c1.cross_unique(c2) if c1.is_categorical() else sorted(c1.unique())
-        unique2 = c2.cross_unique(c1) if c2.is_categorical() else sorted(c2.unique())
+        unique1 = c1.cross_unique(c2) if c1.is_categorical() else c1.unique()
+        unique2 = c2.cross_unique(c1) if c2.is_categorical() else c2.unique()
         counts = [[self.where(u1, col1).where(u2, col2).rows for u2 in unique2] for u1 in unique1]
+        counts = [normalize(el) for el in counts] if norm else counts
         to_string1 = self.get_col(col1).to_string
         to_string2 = self.get_col(col2).to_string
         unique1 = [to_string1(el) for el in unique1]
         unique2 = [to_string2(el) for el in unique2]
-        header = [''] + unique2[:length] + ['sum', 'corr']
+        header = [c1.name + ' / ' + c2.name] + unique2[:length] + ['sum', 'corr']
         corr = [correlate(el) for el in counts]
         table = [[unique1[i]] + counts[i][:length] + [sum(counts[i]), corr[i]] for i in range(len(counts))]
         table = tabulate_data(table, headers = header, grid = True, decimals = 1)

@@ -17,35 +17,35 @@ get_pickle_path = lambda name: plx.join_paths(data_folder, name + ".pickle")
 def get_data_path(name):
     return name if os.path.isfile(name) else plx.join_paths(data_folder, name + ".csv") 
 
-def read_lines(file_name):
+def read_lines(file_name, log = True):
     path = get_data_path(file_name)
-    print("reading text lines in", path)
+    print("reading text lines in", path) if log else None
     with open(path, 'r', encoding = "utf-8") as file:
         text = file.readlines()
     text = [line for line in text if line != nl]
-    print("text lines read!\n")
+    print("text lines read!\n") if log else None
     return text
 
 def split_lines(lines, delimiter = ','):
     return [line.replace("\n", "").split(delimiter) for line in lines]
 
-def read_data(file_name, delimiter = ',', header = False):
-    lines = read_lines(file_name)
-    print('loading data')
+def read_data(file_name, delimiter = ',', header = False, log = True):
+    lines = read_lines(file_name, log = log)
+    print('loading data') if log else None
     matrix = split_lines(lines, delimiter)
     table = matrix[1:] if header else matrix
     data = matrix_class()
     data.set_matrix(table)
     data.set_names(matrix[0]) if header else None
-    print('data loaded!\n')
+    print('data loaded!\n') if log else None
     return data
 
-data = read_data(test_data_path, header = True)
+data_test = read_data(test_data_path, header = True)
 
-data.to_datetime('d1', '%Y-%m-%d', 'years')
-data.to_datetime('d2', '%Y-%m-%d', 'years')
-data.to_float('n1')
-data.to_float('n2')
+data_test.to_datetime('d1', '%Y-%m-%d', 'years')
+data_test.to_datetime('d2', '%Y-%m-%d', 'years')
+data_test.to_float('n1')
+data_test.to_float('n2')
 
 
 
