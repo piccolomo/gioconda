@@ -63,10 +63,10 @@ class data_class():
     def unique(self, nan = True, string = False):
         return unique(self.get_rows(nan = nan, string = string))
 
-    def counts(self, normalize = False, nan = True):
+    def counts(self, norm = False, nan = True):
         u = self.unique(nan)
         v = [self.count(el) for el in u]
-        v = normalize(v) if normalize else v
+        v = normalize(v) if norm else v
         c = transpose([u, v])
         return sorted(c, key = lambda el: el[1], reverse = True)
 
@@ -76,11 +76,11 @@ class data_class():
         new.set_data(new_data);
         return new
 
-    def cross_counts(self, data, normalize = False, nan = True):
+    def cross_counts(self, data, norm = False, nan = True):
         u = self.unique(nan)
         v = [self.select(el, data) for el in u]
         v = [el.not_nan() for el in v] if data.is_categorical() else [el.mean() for el in v] 
-        v = normalize(v) if normalize else v
+        v = normalize(v) if norm else v
         c = transpose([u, v])
         return sorted(c, key = lambda el: el[1], reverse = True)
 
