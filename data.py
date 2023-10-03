@@ -265,7 +265,7 @@ class datetime_data_class(numerical_data_class):
         return info
 
     def to_string(self, el):
-         return n if el == n else time_to_string(el, self.form) if isinstance(el, dt.datetime) else timedelta_to_string(el, self.form_delta) if isinstance(el, dt.timedelta) else str(round(el, 1))
+         return n if el == n else time_to_string(el, self.form) if isinstance(el, dt.datetime) else timedelta_to_string(el, self.form_delta) if isinstance(el, dt.timedelta) else str(el)
 
     def get_index(self):
         ref = self.min()
