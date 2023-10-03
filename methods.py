@@ -29,9 +29,14 @@ def datetime_linspace(lower, upper, length):
 def correlate(data):
     M, s, l = max(data), sum(data), len(data)
     a = s / l
-    return 100 - 100 * abs(M - s) / abs(a - s) 
+    return 100 - 100 * abs(M - s) / abs(a - s)
 
-#correct_index = lambda r, R: max(0, min(correct_index_sign(r, R), R))
+def correlate_numerical(x, y):
+    return stats.spearmanr(x, y)
+    #return stats.pearsonr(x, y)
+
+def correlate_categorical(x, y):
+
 
 correct_index = lambda r, R: 0 if r < -R else r + R if r < 0 else R if r > R else r
 correct_left_index = lambda r, R: 0 if r is None else correct_index(r, R)

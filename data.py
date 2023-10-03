@@ -28,7 +28,7 @@ class data_class():
         
     def get(self, row, string = False):
         el = self.data[row]
-        return self.to_string(el) if string else el
+        return n if el == n else self.to_string(el) if string else el
         
     def get_rows(self, rows = None, nan = True, string = False):
         rows = self.correct_rows(rows)
@@ -90,7 +90,6 @@ class data_class():
 
     def cross_unique(self, data, nan = True):
         return [el[0] for el in self.cross_counts(data, 0, nan)]
-    
 
     def copy(self):
         return copy(self)
@@ -179,6 +178,10 @@ class numerical_data_class(data_class):
     def __init__(self, data):
         super().__init__(data)
         self.set_type('numerical')
+
+    def mul(self, k):
+        data = [el * k if el != n else n for el in self.data]
+        self.set_data(data)
 
     def round(self, decimals = 1):
         fun = lambda el: round(el, decimals) if el != n else el

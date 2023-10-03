@@ -40,6 +40,10 @@ class matrix_class():
     def set_type(self, col, type):
         self.get_col(col).set_type(type)
 
+    def mul(self, col, k):
+        c = self.get_col(col)
+        c.mul(k) if c.is_numerical() else None
+
         
     def get_col_index(self, col):
         return self.get_names().index(col) if isinstance(col, str) else col
@@ -61,9 +65,9 @@ class matrix_class():
         names = ['i'] if index else []
         return names + [self.get_name(col) for col in self.get_cols_indexes(cols)]
 
-    def print_names(self):
-        table = transpose([self.Cols, self.get_names()])
-        table = tabulate_data(table, grid = 0, headers = ['i', 'column'])
+    def print_cols(self):
+        table = transpose([self.Cols, self.get_names(), self.get_types()])
+        table = tabulate_data(table, grid = 0, headers = ['i', 'column', 'type'])
         print(table)
 
     def get_type(self, col):
@@ -173,7 +177,7 @@ class matrix_class():
         plt.ylabel(c2.name)
         plt.show()
         
-    def crosstab(self, col1, col2, length = 5, norm = True):
+    def crosstab(self, col1, col2, length = 5, norm = True, log = False):
         c1, c2 = self.get_col(col1), self.get_col(col2)
         unique1 = c1.cross_unique(c2) if c1.is_categorical() else c1.unique()
         unique2 = c2.cross_unique(c1) if c2.is_categorical() else c2.unique()
@@ -187,8 +191,10 @@ class matrix_class():
         corr = [correlate(el) for el in counts]
         table = [[unique1[i]] + counts[i][:length] + [sum(counts[i]), corr[i]] for i in range(len(counts))]
         table = tabulate_data(table, headers = header, grid = True, decimals = 1)
-        print(table)
-        print('correlation', round(mean(corr), 1), '%')
+        corr = mean(corr)
+        print(table) if log else None
+        print('correlation', round(corr, 1), '%')  if log else None
+        return corr
         
 
     def correct_cols(self, cols):
@@ -246,146 +252,3 @@ class matrix_class():
         rows = list(range(rows)) + list(range(-rows, 0))
         cols = list(range(cols)) + list(range(-cols, 0))
         return self.tabulate(1, 1, 1, rows, cols)
-    
-
-
-
-# to_int = lambda el: np.int64(el) if el != 'nan' else nan
-# to_bool = lambda el: bool(el) if el != 'nan' else nan
-
-# def get_numerical_frame(frame):
-#     return frame.select_dtypes(include = ['number'])
-
-# def get_datetime_frame(frame):
-#     return frame.select_dtypes(include = ['datetime'])
-
-# def get_categorical_frame(frame):
-#     frame = frame.select_dtypes(exclude = ['number', 'datetime'])
-#     frame.replace(np.nan, 'nan', inplace = True)
-#     return frame
-
-# def datetime_to_numerical(frame):
-#     frame = frame.copy()
-#     frame -= frame.min()
-#     for col in frame.cols:
-#         frame[col] = frame[col].apply(timedelta_to_years)
-#     return frame
-
-# def hstack_frames(frame1, frame2):
-#     return pd.concat([frame1, frame2], axis = 1)
-
-
-
-# def print_multiindex_frame(frame, decimals = 1):
-#     first_index = frame.index.names[0]
-#     groups = frame.groupby(first_index)
-#     first_index_values = list(set([el[0] for el in frame.index]))
-#     for value in first_index_values:
-#         print(value)
-#         print_frame(frame.xs(value).reset_index(), style = 'simple_outline')
-
-# def describe_categorical_frame(frame, length = 5):
-#     cols = list(frame.cols)
-#     data = []
-#     for col in cols:
-#         values = frame[col].value_counts(normalize = True) * 100
-#         keys = values.keys().to_list()
-#         counts = list(values.values)
-        
-#         lv = min(length, len(values)); r = range(lv)
-#         for i in r:
-#             data.append([col, keys[i], counts[i]])
-
-#     data = pd.DataFrame(data, cols =  ['col', 'value', 'count'])
-#     data.set_index(['column', 'value'], inplace = True)
-#     return data
-
-# def describe_numerical_frame(frame):
-#     info = pd.DataFrame()
-#     cols = list(frame.columns)
-#     info.index = cols
-#     mean = [frame[col].mean() for col in cols]
-#     mode = [frame[col].mode()[0] for col in cols]
-#     std = np.array([frame[col].std() for col in cols])
-#     m = np.array( [frame[col].min() for col in cols])
-#     M =  np.array([frame[col].max() for col in cols])
-#     spread =  M - m
-#     info['mean'] = mean
-#     info['mode'] = mode
-#     info['std'] = std
-#     info['spread'] = spread
-#     info['density'] = std / spread
-#     return info
-
-# def describe_datetime_frame(frame):
-#     info = describe_numerical_frame(frame)
-#     info['mean'] = info['mean'].dt.strftime('%d/%m/%Y')
-#     info['mode'] = info['mode'].dt.strftime('%d/%m/%Y')
-#     info['std'] = info['std'].apply(timedelta_to_years)
-#     info['spread'] = info['spread'].apply(timedelta_to_years)
-#     return info
-    
-
-# def get_numerical_correlations(frame):
-#     return 100 * frame.corr(method = 'spearman')
-
-# def get_categorical_correlations(frame):
-#     cols = frame.columns
-#     new = pd.DataFrame(columns = cols, index = cols)
-#     l = len(cols); rg = range(l)
-#     for row in cols:
-#         for col in cols:
-#             print(row, col)
-#             cross = pd.crosstab(frame[row], frame[col], normalize = 0) * 100
-#             new[row][col] = int(k2(cross).pvalue < 0.05)
-#             # row, col = cols[r], cols[c]
-#             # if col != row:
-#             #     print(row, 'vs', col)
-#             #     i = cross.idxmax(axis = 1)
-#             #     m = cross.max(axis = 1)
-#             #     p = m > -50
-#             #     m = pd.concat([i[p], m[p]], axis = 1)
-#             #     print_frame(m)
-                
-#             #corr = 100 if row == col else 100 * cramers_v(frame[row], frame[col])
-#             #new[row][col] = round(corr, 1)
-#     return new
-
-# def get_mix_correlations(categorical, numerical):
-#     cols_cat  = categorical.columns
-#     cols_num = numerical.columns
-#     for row in cols_cat:
-#         for col in cols_num:
-#             cat = categorical[row]
-#             num = numerical[col]
-#             print(row, col)
-#             plt.clf()
-#             sns.violinplot(x = cat, y = num, bw = 0.15)
-#             plt.xticks(rotation='vertical')
-#             plt.tight_layout()
-#             #plt.xlabel(''); plt.ylabel('')
-#             plt.show(block = 0)
-#             input()
-# # def get_mix_correlations(categorical, numerical):
-# #     cols_cat  = categorical.columns
-# #     cols_num = numerical.columns
-# #     new = pd.DataFrame(columns = cols_num, index = cols_cat)
-# #     for row in cols_cat:
-# #         for col in cols_num:
-# #             t = [num[cat == label].to_numpy() for label in unique]
-# #             res = kruskal(*t, nan_policy = 'omit').pvalue if len(unique) > 1 else np.nan
-# #             new[col][row] = round(res, 1)
-# #     return new
-            
-    
-# def cramers_v(x, y):
-#     confusion_matrix = pd.crosstab(x, y)
-#     chi2 = chi2_contingency(confusion_matrix)[0]
-#     n = confusion_matrix.sum().sum()
-#     phi2 = chi2/n
-#     r, k = confusion_matrix.shape
-#     phi2corr = max(0, phi2-((k-1)*(r-1))/(n-1))
-#     rcorr = r-((r-1)**2)/(n-1)
-#     kcorr = k-((k-1)**2)/(n-1)
-#     corr = min((kcorr - 1), (rcorr - 1))
-#     return np.sqrt(phi2corr / corr) if corr != 0 else np.nan
