@@ -61,13 +61,6 @@ nl = '\n'
 sp = ' '
 n = 'nan'
 
-def tabulate_data(data, decimals = 1, grid = False, headers = None):
-    style = 'rounded_grid' if grid else 'rounded_outline'
-    float_format = '.' + str(decimals) + 'f'
-    headers = list(headers) if headers is not None else []
-    return tabulate(data, headers = headers, tablefmt = style, floatfmt = float_format)
-
-
 def dates_to_seconds(dates):
     ref = [el for el in dates if el != n][0]
     dates = [(el - ref).total_seconds() if el != n else n for el in dates]
@@ -97,5 +90,41 @@ def timedelta_to_number(delta, form):
     return delta / div[index]
 
 timedelta_to_string = lambda delta, form: str(round(timedelta_to_number(delta, form), 1))
+
+pad = lambda string, length: string + sp * (length - len(string))
+
+
+headers = ['c1', 'c2', 'c3', 'd1', 'd2', 'n1', 'n2']
+footers = ['c1', 'c2', 'c3', 'd1', 'd2', 'n1', 'n2']
+
+to_string = lambda el, d: el if isinstance(el, str) else str(round(el, d)) if isinstance(el, float) else str(el)
+vline = '│'
+delimiter = sp * 1 + vline + sp * 1
+
+def tabulate(data, headers = None, footers = None, decimals = 1):
+    data = [headers] + data if headers is not None else data
+    data = data + [footers] if footers is not None else data
+    data = [[to_string(el, decimals) for el in line] for line in data]
+    t = transpose(data)
+    cols = len(t); rows = len(data)
+    Cols = range(cols)
+    t = [[(delimiter if i != 0 else sp) + el for el in t[i]] for i in Cols]
+    ls = [max([len(el) for el in col]) for col in t]
+    Cols = np.array(Cols)[np.cumsum(ls) <= plt.tw()]
+    t = [[pad(el, ls[i]) for el in t[i]] for i in Cols]
+    d = transpose(t)
+    lines = [''.join(line) for line in d]
+    lines[0] = plt.colorize(lines[0], style = 'bold') if headers is not None else lines[0]
+    lines[-1] = plt.colorize(lines[-1], style = 'bold') if footers is not None else lines[-1]
+    out = nl.join(lines)
+    return out
+
+# print(tabulate(data, headers, footers, decimals = 1))
+
+# def tabulate_data(data, decimals = 1, grid = False, headers = None):
+#     style = 'rounded_grid' if grid else 'rounded_outline'
+#     float_format = '.' + str(decimals) + 'f'
+#     headers = list(headers) if headers is not None else []
+#     return tabulate(data, headers = headers, tablefmt = style, floatfmt = float_format)
 
 

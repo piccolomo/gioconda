@@ -26,13 +26,13 @@ class data_class():
     def correct_rows(self, rows):
         return correct_range(rows, self.rows) if is_list(rows) or rows is None else index_to_range(rows, self.rows)
         
-    def get(self, row, string = False):
+    def get_element(self, row, string = False):
         el = self.data[row]
         return n if el == n else self.to_string(el) if string else el
         
-    def get_rows(self, rows = None, nan = True, string = False):
+    def get(self, rows = None, nan = True, string = False):
         rows = self.correct_rows(rows)
-        return [self.get(row, string) for row in rows if nan or (not nan and self.get(row) != n)]
+        return [self.get_element(row, string) for row in rows if nan or (not nan and self.get(row) != n)]
 
     
     def apply(self, function, *args):

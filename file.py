@@ -38,12 +38,12 @@ def read_data(file_name, delimiter = ',', header = False, log = True):
     print('data loaded!\n') if log else None
     return data
 
-data_test = read_data(test_data_path, header = True, log = False)
+test = read_data(test_data_path, header = True, log = False)
 
-data_test.to_datetime('d1', '%Y-%m-%d', 'years')
-data_test.to_datetime('d2', '%Y-%m-%d', 'years')
-data_test.to_float('n1')
-data_test.to_float('n2')
+test.to_datetime('d1', '%Y-%m-%d', 'years')
+test.to_datetime('d2', '%Y-%m-%d', 'years')
+test.to_float('n1')
+test.to_float('n2')
 
 
 
