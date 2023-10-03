@@ -26,10 +26,19 @@ def datetime_linspace(lower, upper, length):
     dates = pd.date_range(lower, upper, length)
     return [el.to_pydatetime() for el in dates]
 
+def even_data(bins, total):
+    data = [0] * bins
+    while sum(data) < total:
+        for i in range(bins):
+            data[i] += 1
+            if sum(data) == total:
+                break
+    return data
+
 def correlate(data):
-    data = np.array(data)
+    data = sorted(np.array(data), reverse = 1)
     s, l = sum(data), len(data)
-    data0 = np.array([s / l] * l)
+    data0 = np.array(even_data(l, s))
     return 100 * np.linalg.norm(data - data0) / np.linalg.norm(data)
 
 #correct_index = lambda r, R: max(0, min(correct_index_sign(r, R), R))

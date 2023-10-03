@@ -138,14 +138,14 @@ class matrix_class():
         return self.get_col(col).counts(normalize)
 
     def describe_numerical(self):
-        cols = ['i', 'col', 'mean', 'median', 'mode', 'std', 'span', 'density', n]
-        info = [self.get_col(col).get_info() for col in self.get_numerical_cols()]
+        cols = ['i', 'col', 'mean', 'median', 'mode', 'std', 'span', 'density']
+        info = [[self.get_col_index(col)] + self.get_col(col).get_info() for col in self.get_numerical_cols()]
         table = tabulate_data(info, headers = cols, decimals = 1)
         print(table)
 
     def describe_datetime(self, form = 'days'):
         cols = ['i', 'col', 'mean', 'median', 'mode', 'std', 'span', 'density', n]
-        info = [self.get_col(col).get_info(string = True) for col in self.get_datetime_cols()]
+        info = [[self.get_col_index(col)] + self.get_col(col).get_info(string = True) for col in self.get_datetime_cols()]
         table = tabulate_data(info, headers = cols, decimals = 1)
         print(table)
 
@@ -156,9 +156,8 @@ class matrix_class():
 
     def plot(self, col1, col2):
         c1, c2 = self.get_col(col1), self.get_col(col2)
-        x = c1.get_index()
-        data = c1 if c1.is_categorical() else None
-        y = c2.get_index(data)
+        x = c1.get_index(data = c2) if c1.is_categorical() else c1.get_index()
+        y = c2.get_index(data = c1) if c2.is_categorical() else c2.get_index()
         xy = [el for el in transpose([x, y]) if n not in el]
         x, y = transpose(xy)
         plt.clf()
@@ -169,24 +168,21 @@ class matrix_class():
         plt.ylabel(c2.name)
         plt.show()
         
-    def crosstab(self, col1, col2, cols = 10):
-        unique1 = self.get_col(col1).unique()
-        unique2 = self.get_col(col2).unique()
-        counts = [[self.where(col1, u1).where(col2, u2).rows for u2 in unique2] for u1 in unique1]
-        corr_rows = [corr(data) for data in counts]
-        
+    def crosstab(self, col1, col2, length = 5):
+        c1, c2 = self.get_col(col1), self.get_col(col2)
+        unique1 = c1.cross_unique(c2) if c1.is_categorical() else sorted(c1.unique())
+        unique2 = c2.cross_unique(c1) if c2.is_categorical() else sorted(c2.unique())
+        counts = [[self.where(u1, col1).where(u2, col2).rows for u2 in unique2] for u1 in unique1]
         to_string1 = self.get_col(col1).to_string
         to_string2 = self.get_col(col2).to_string
         unique1 = [to_string1(el) for el in unique1]
         unique2 = [to_string2(el) for el in unique2]
-        header = [''] + unique2[:cols] + ['']
-        table = [[unique1[i]] + counts[i][:cols] + [corr_rows[i]] for i in range(len(counts))]
-        # table  = [[''] + unique2]
-        # table += [[to_string1(u1)] + 
+        header = [''] + unique2[:length] + ['sum', 'corr']
+        corr = [correlate(el) for el in counts]
+        table = [[unique1[i]] + counts[i][:length] + [sum(counts[i]), corr[i]] for i in range(len(counts))]
         table = tabulate_data(table, headers = header, grid = True, decimals = 1)
         print(table)
-        print('correlation', col1, 'implies', col2, round(mean(corr_rows), 1), '%')
-        return 
+        print('correlation', round(mean(corr), 1), '%')
         
 
     def correct_cols(self, cols):
@@ -213,10 +209,8 @@ class matrix_class():
         end = correct_right_index(end, self.rows)
         return self.subset(range(start, end))
 
-    def where(self, value, cols = None):
-        cols = self.get_cols_indexes(cols)
-        rows = join([self.get_col(col).where(value) for col in cols])
-        return self.subset(rows)
+    def where(self, value, col):
+        return self.subset(self.get_col(col).where(value))
 
 
     def tabulate_data(self, header = True, index = False, rows = None, cols = None, grid = False, decimals = 1):

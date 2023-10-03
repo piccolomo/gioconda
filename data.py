@@ -48,11 +48,14 @@ class data_class():
     
     def is_categorical(self):
         return self.type == 'categorical'
+    
 
+    def where(self, value):
+        rows = [i for i in self.Rows if self.data[i] == value]
+        return rows
 
     def count(self, n):
-        data = [el for el in self.data if el == n]
-        return len(data)
+        return len(self.where(n))
 
     def nan(self):
         return self.count(n)
@@ -60,15 +63,16 @@ class data_class():
     def not_nan(self):
         return self.rows - self.count(n)
 
-    def unique(self, nan = True, string = False):
-        return unique(self.get_rows(nan = nan, string = string))
-
     def counts(self, norm = False, nan = True):
-        u = self.unique(nan)
+        u = unique(self.get_rows(nan = nan))
         v = [self.count(el) for el in u]
         v = normalize(v) if norm else v
         c = transpose([u, v])
         return sorted(c, key = lambda el: el[1], reverse = True)
+
+    def unique(self, nan = True):
+        return [el[0] for el in self.counts(0, nan)]
+        #return unique(self.get_rows(nan = nan, string = string))
 
     def select(self, el, data):
         new = data.empty()
@@ -87,6 +91,7 @@ class data_class():
     def cross_unique(self, data, nan = True):
         return [el[0] for el in self.cross_counts(data, 0, nan)]
     
+
     def copy(self):
         return copy(self)
 
@@ -103,10 +108,6 @@ class data_class():
 
     def part(self, a = None, b = None):
         return self.subset(range(a, b))
-
-    def where(self, value):
-        rows = [i for i in self.Rows if self.data[i] == value]
-        return rows
 
     def __str__(self):
         out   =      'name    ' + self.name
@@ -209,7 +210,7 @@ class numerical_data_class(data_class):
         return mode(self.get_rows(nan = False)) if self.rows > 0 else n
 
     def get_info(self, string = False):
-        info = [self.name, self.mean(), self.median(), self.mode(), self.std(), self.span(), self.density(), self.nan()]
+        info = [self.name, self.mean(), self.median(), self.mode(), self.std(), self.span(), self.density()]
         info = [self.to_string(el) for el in info] if string else info
         return info
 

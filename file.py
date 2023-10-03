@@ -2,15 +2,20 @@ import pickle
 import plotext as plx
 from bongo.matrix import matrix_class
 from bongo.methods import nl
+import os
 
 # File Utilities
+bongo_folder = os.path.dirname(os.path.realpath(__file__))
+test_data_path = plx.join_paths(bongo_folder, "test_data.csv")
+
 base_folder = plx.parent_folder(plx.script_folder())
 data_folder =  plx.join_paths(base_folder, "data")
-data_csv = plx.join_paths(data_folder, "data.csv")
-data_pickle = plx.join_paths(data_folder, "data.pickle")
+get_data_path = lambda name: plx.join_paths(data_folder, name + ".csv")
+get_pickle_path = lambda name: plx.join_paths(data_folder, name + ".pickle")
 
-def get_data_path(file_name):
-    return plx.join_paths(data_folder, file_name + ".csv")
+
+def get_data_path(name):
+    return name if os.path.isfile(name) else plx.join_paths(data_folder, name + ".csv") 
 
 def read_lines(file_name):
     path = get_data_path(file_name)
@@ -34,6 +39,13 @@ def read_data(file_name, delimiter = ',', header = False):
     data.set_names(matrix[0]) if header else None
     print('data loaded!\n')
     return data
+
+data = read_data(test_data_path, header = True)
+
+data.to_datetime('d1', '%Y-%m-%d', 'years')
+data.to_datetime('d2', '%Y-%m-%d', 'years')
+data.to_float('n1')
+data.to_float('n2')
 
 
 
