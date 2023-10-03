@@ -32,10 +32,22 @@ def correlate(data):
     return 100 - 100 * abs(M - s) / abs(a - s)
 
 def correlate_numerical(x, y):
-    return stats.spearmanr(x, y)
+    return stats.spearmanr(x, y).statistic
     #return stats.pearsonr(x, y)
 
 def correlate_categorical(x, y):
+    pass
+
+def cramers(confusion_matrix):
+    confusion_matrix = np.array(confusion_matrix)
+    chi2 = stats.chi2_contingency(confusion_matrix)[0]
+    n = confusion_matrix.sum()
+    phi2 = chi2/n
+    r,k = confusion_matrix.shape
+    phi2corr = max(0, phi2 - ((k-1)*(r-1))/(n-1))    
+    rcorr = r - ((r-1)**2)/(n-1)
+    kcorr = k - ((k-1)**2)/(n-1)
+    return np.sqrt(phi2corr / min( (kcorr-1), (rcorr-1)))
 
 
 correct_index = lambda r, R: 0 if r < -R else r + R if r < 0 else R if r > R else r

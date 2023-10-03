@@ -177,25 +177,42 @@ class matrix_class():
         plt.ylabel(c2.name)
         plt.show()
         
-    def crosstab(self, col1, col2, length = 5, norm = True, log = False):
+    def categorical_tab(self, col1, col2, length = 5, norm = True, log = False):
         c1, c2 = self.get_col(col1), self.get_col(col2)
-        unique1 = c1.cross_unique(c2) if c1.is_categorical() else c1.unique()
-        unique2 = c2.cross_unique(c1) if c2.is_categorical() else c2.unique()
+        unique1 = c1.cross_unique(c2)
+        unique2 = c2.cross_unique(c1)
         counts = [[self.where(u1, col1).where(u2, col2).rows for u2 in unique2] for u1 in unique1]
         counts = [normalize(el) for el in counts] if norm else counts
-        to_string1 = self.get_col(col1).to_string
-        to_string2 = self.get_col(col2).to_string
-        unique1 = [to_string1(el) for el in unique1]
-        unique2 = [to_string2(el) for el in unique2]
-        header = [c1.name + ' / ' + c2.name] + unique2[:length] + ['sum', 'corr']
         corr = [correlate(el) for el in counts]
-        table = [[unique1[i]] + counts[i][:length] + [sum(counts[i]), corr[i]] for i in range(len(counts))]
+        table = [[unique1[i]] + counts[i][:length] + [corr[i]] for i in range(len(counts))]
+        header = [c1.name + ' / ' + c2.name] + unique2[:length] + ['corr']
         table = tabulate_data(table, headers = header, grid = True, decimals = 1)
-        corr = mean(corr)
         print(table) if log else None
-        print('correlation', round(corr, 1), '%')  if log else None
-        return corr
+        corr = mean(corr)
+        print('mean correlation', round(corr, 1), '%')  if log else None
+        return counts
         
+    def correlate_categorical(self, col1, col2):
+        return cramers(self.categorical_tab(col1, col2))
+    
+    def correlate_numerical(self, col1, col2):
+        c1, c2 = self.get_col(col1), self.get_col(col2)
+        return correlate_numerical(c1.get_rows(), c2.get_rows())
+
+    def correlate_categorical_to_numerical(self, col1, col2):
+        c1, c2 = self.get_col(col1), self.get_col(col2)
+        i1 = c1.get_index(c2)
+        i2 = c2.get_index()
+        return correlate_numerical(i1, i2)
+
+    def correlate(self, col1, col2):
+        c1, c2 = self.get_col(col1), self.get_col(col2)
+        cc = c1.is_categorical() and c2.is_categorical()
+        cn = c1.is_categorical() and not c2.is_categorical()
+        nc = not c1.is_categorical() and c2.is_categorical()
+        nn = not c1.is_categorical() and not c2.is_categorical()
+        return self.correlate_categorical(col1, col2) if cc else self.correlate_numerical(col1, col2) if nn else self.correlate_categorical_to_numerical(col1, col2) if cn else self.correlate_cat_to_num(col2, col1)
+
 
     def correct_cols(self, cols):
         return self.get_cols_indexes(cols) if is_list(cols) or cols is None else index_to_range(self.get_col_index(cols), self.cols)
