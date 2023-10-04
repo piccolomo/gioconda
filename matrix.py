@@ -233,31 +233,7 @@ class matrix_class():
 
 
 
-    def tabulate_data(self, header = True, index = False, rows = None, cols = None, decimals = 1):
-        headers = self.names(cols, index) if header else None
-        return tabulate(self.section(rows, cols, index, 1), headers = headers, decimals = decimals)
-        print(table)
 
-    def tabulate_types(self, rows = None, cols = None):
-        return tabulate(transpose([self.names(cols), self.get_cols_indexes(cols), self.types(cols)]), headers = ['name', 'id', 'type'])
-        print(table)
-
-    def tabulate_dimensions(self):
-        return tabulate([[self.rows, self.cols]], headers = ['rows', 'cols'])
-
-    def tabulate(self, header = True, index = False, info = True, rows = None, cols = None, decimals = 1):
-        table = self.tabulate_dimensions() + nl * 2 + self.tabulate_types(rows, cols) + nl * 2 if info else ''
-        table = table + self.tabulate_data(header, index, rows, cols, decimals)
-        return table
-
-    def print(self, header = True, index = True, info = True, rows = None, cols = None, decimals = 1):
-        print(self.tabulate(header, index, info, rows, cols, decimals))
-
-    def __repr__(self):
-        rows, cols = 10, 3
-        rows = list(range(rows)) + list(range(-rows, 0))
-        #cols = list(range(cols)) + list(range(-cols, 0))
-        return self.tabulate(1, 1, 0, rows)
 
     def plot(self, col1, col2):
         c1, c2 = self.col(col1), self.col(col2)
@@ -336,32 +312,30 @@ class matrix_class():
         return self.subset(range(start, end))
 
     def where(self, value, col):
-        return self.subset(self.get_col(col).where(value))
+        return self.subset(self.col(col).where(value))
 
 
     def tabulate_data(self, header = True, index = False, rows = None, cols = None, decimals = 1):
         headers = self.names(cols, index) if header else None
-        return tabulate(self.section(rows, cols, index, 1), headers = headers, decimals = decimals)
-        print(table)
+        footers = self.types(cols) if header else None
+        return tabulate(self.section(rows, cols, index, 1), headers = headers, footers = footers, decimals = decimals)
 
-    def tabulate_types(self, rows = None, cols = None):
+    def tabulate_types(self, cols = None):
         return tabulate(transpose([self.names(cols), self.get_cols_indexes(cols), self.types(cols)]), headers = ['name', 'id', 'type'])
-        print(table)
 
     def tabulate_dimensions(self):
         return tabulate([[self.rows, self.cols]], headers = ['rows', 'cols'])
 
-    def tabulate(self, header = True, index = False, info = True, rows = None, cols = None, decimals = 1):
-        table = self.tabulate_dimensions() + nl * 2 + self.tabulate_types(rows, cols) + nl * 2 if info else ''
-        table = table + self.tabulate_data(header, index, rows, cols, decimals)
-        return table
+    def tabulate_info(self, cols = None):
+        return self.tabulate_types(cols) + 2 * nl + self.tabulate_dimensions()
 
-    def print(self, header = True, index = True, info = True, rows = None, cols = None, decimals = 1):
-        print(self.tabulate(header, index, info, rows, cols, decimals))
-
+    def print(self, header = True, index = False, info = True, rows = None, cols = None, decimals = 1):
+        print(self.tabulate_data(header, index, rows, cols, decimals))
+        print(nl + self.tabulate_dimensions()) if info else None
 
     def __repr__(self):
         rows, cols = 10, 3
         rows = list(range(rows)) + list(range(-rows, 0))
-        cols = list(range(cols)) + list(range(-cols, 0))
-        return self.tabulate(1, 1, 1, rows, cols)
+        #cols = list(range(cols)) + list(range(-cols, 0))
+        #return self.tabulate_i(1, 1, 0, rows)
+        return self.tabulate_info()
