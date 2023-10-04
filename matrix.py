@@ -42,7 +42,7 @@ class matrix_class():
 
     def multiply(self, col, k):
         c = self.col(col)
-        c.mul(k) if c.is_numerical() else None
+        c.multiply(k) if c.is_numerical() else None
 
 
         
@@ -91,7 +91,9 @@ class matrix_class():
         return self.col(col).get(rows, nan = nan, string = string)
 
     def section(self, rows = None, cols = None, index = False, string = False):
-        data = transpose([self.get(col, rows, string = string) for col in cols])
+        rows = self.correct_rows(rows)
+        cols = self.correct_cols(cols)
+        data = transpose([self.get(col, rows, string = string if self.is_datetime(col) else 0) for col in cols])
         data = [[rows[i]] + data[i] for i in range(len(rows))] if index else data
         return data
 
@@ -173,19 +175,19 @@ class matrix_class():
 
     def numerical_info(self):
         cols = ['i', 'col', 'mean', 'median', 'mode', 'std', 'span', 'density']
-        info = [[self.get_col_index(col)] + self.col(col).get_info() for col in self.get_numerical_cols()]
-        table = tabulate_data(info, headers = cols, decimals = 1)
+        info = [[self.get_col_index(col)] + self.col(col).info() for col in self.numerical_cols()]
+        table = tabulate(info, headers = cols, decimals = 1)
         print(table)
 
     def datetime_info(self, form = 'days'):
         cols = ['i', 'col', 'mean', 'median', 'mode', 'std', 'span', 'density']
-        info = [[self.get_col_index(col)] + self.col(col).get_info(string = True) for col in self.get_datetime_cols()]
-        table = tabulate_data(info, headers = cols, decimals = 1)
+        info = [[self.get_col_index(col)] + self.col(col).info(string = True) for col in self.datetime_cols()]
+        table = tabulate(info, headers = cols, decimals = 1)
         print(table)
 
-    def categorical_info(self, normalize = 0, cols = None, rows = 10):
+    def categorical_info(self, norm = 0, cols = None, length = 10):
         cols = self.correct_cols(cols)
-        [self.col(col).print_info(normalize, rows = rows) for col in cols if self.is_categorical(col)]
+        [self.col(col).print_counts(norm = norm, length = length) for col in cols if self.is_categorical(col)]
 
 
 
@@ -232,7 +234,8 @@ class matrix_class():
 
 
     def tabulate_data(self, header = True, index = False, rows = None, cols = None, decimals = 1):
-        return tabulate(self.section(rows, cols, index, 1), headers = self.names(cols, index) if header else None, decimals = decimals)
+        headers = self.names(cols, index) if header else None
+        return tabulate(self.section(rows, cols, index, 1), headers = headers, decimals = decimals)
         print(table)
 
     def tabulate_types(self, rows = None, cols = None):
@@ -243,11 +246,8 @@ class matrix_class():
         return tabulate([[self.rows, self.cols]], headers = ['rows', 'cols'])
 
     def tabulate(self, header = True, index = False, info = True, rows = None, cols = None, decimals = 1):
-        rows = self.correct_rows(rows)
-        cols = self.correct_cols(cols)
-        table = self.tabulate_dimensions() if info else ''
-        table = table + nl * 2 + self.tabulate_types(rows, cols) if info else table
-        table = table + nl * 2 + self.tabulate_data(header, index, rows, cols, decimals)
+        table = self.tabulate_dimensions() + nl * 2 + self.tabulate_types(rows, cols) + nl * 2 if info else ''
+        table = table + self.tabulate_data(header, index, rows, cols, decimals)
         return table
 
     def print(self, header = True, index = True, info = True, rows = None, cols = None, decimals = 1):
@@ -256,8 +256,8 @@ class matrix_class():
     def __repr__(self):
         rows, cols = 10, 3
         rows = list(range(rows)) + list(range(-rows, 0))
-        cols = list(range(cols)) + list(range(-cols, 0))
-        return self.tabulate(1, 1, 1, rows, cols)
+        #cols = list(range(cols)) + list(range(-cols, 0))
+        return self.tabulate(1, 1, 0, rows)
 
     def plot(self, col1, col2):
         c1, c2 = self.col(col1), self.col(col2)

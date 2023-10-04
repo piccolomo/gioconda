@@ -63,16 +63,20 @@ class data_class():
     def not_nan(self):
         return self.rows - self.count(n)
 
-    def counts(self, norm = False, nan = True):
-        u = unique(self.get_rows(nan = nan))
+    def counts(self, norm = False, nan = True, length = 10):
+        u = unique(self.get(nan = nan))
         v = [self.count(el) for el in u]
         v = normalize(v) if norm else v
-        c = transpose([u, v])
+        c = transpose([u, v])[ : length]
         return sorted(c, key = lambda el: el[1], reverse = True)
+
+    def print_counts(self, norm = False, nan = True, length = 10):
+        counts = self.counts(norm = norm, nan = nan, length = length)
+        return print(tabulate(counts, headers = [self.name, 'count']) + nl)
 
     def unique(self, nan = True):
         return [el[0] for el in self.counts(0, nan)]
-        #return unique(self.get_rows(nan = nan, string = string))
+        #return unique(self.get(nan = nan, string = string))
 
     def select(self, el, data):
         new = data.empty()
@@ -109,14 +113,11 @@ class data_class():
         return self.subset(range(a, b))
 
     def __str__(self):
-        out   =      'name    ' + self.name
-        out  += nl + 'type    ' + self.type
-        out  += nl + 'rows    ' + str(self.rows)
-        out  += nl + 'nan     ' + str(self.nan()) 
-        out  += nl + 'unique  ' + str(len(self.unique()))
-        out  += nl + 'firsts  ' + ', '.join(self.get_rows(5, string = 1))
-        out  += nl + 'lasts   ' + ', '.join(self.get_rows(-5, string = 1))
-        return out
+        firsts = ', '.join(self.get(5, string = 1))
+        lasts = ', '.join(self.get(5, string = 1))
+        table = [['name', 'type', 'rows', 'nan', 'unique', 'firsts', 'lasts']]
+        table += [[self.name, self.type, self.rows, self.nan(), len(self.unique()), firsts, lasts]]
+        return tabulate(transpose(table))
 
     def __repr__(self):
         return str(self)
@@ -159,11 +160,11 @@ class categorical_data_class(data_class):
         return new
     
 
-    def print_info(self, normalize = 1, rows = 10):
+    def info(self, normalize = 1, rows = 10):
         cols = [self.name, '']
         table = self.counts(normalize, rows)[:rows]
-        table = tabulate_data(table, headers = cols, decimals = 1)
-        print(table)
+        table = tabulate(table, headers = cols, decimals = 1)
+        return table
 
     def get_index(self, data = None):
         u = self.unique() if data is None else self.cross_unique(data)
@@ -179,7 +180,7 @@ class numerical_data_class(data_class):
         super().__init__(data)
         self.set_type('numerical')
 
-    def mul(self, k):
+    def multiply(self, k):
         data = [el * k if el != n else n for el in self.data]
         self.set_data(data)
 
@@ -188,31 +189,31 @@ class numerical_data_class(data_class):
         self.apply(fun)
 
     def min(self):
-        return min(self.get_rows(nan = False), default = n)
+        return min(self.get(nan = False), default = n)
     
     def max(self):
-        return max(self.get_rows(nan = False), default = n)
+        return max(self.get(nan = False), default = n)
 
     def span(self):
         return self.max() - self.min() if self.rows > 0 else n
 
     def std(self):
-        return std(self.get_rows(nan = False)) if self.rows > 0 else n
+        return std(self.get(nan = False)) if self.rows > 0 else n
     
     def density(self):
         span = self.span()
         return n if span == n else 100 * self.std() / span if span != 0 else 'inf'
 
     def mean(self):
-        return mean(self.get_rows(nan = False)) if self.rows > 0 else n
+        return mean(self.get(nan = False)) if self.rows > 0 else n
 
     def median(self):
-        return median(self.get_rows(nan = False)) if self.rows > 0 else n
+        return median(self.get(nan = False)) if self.rows > 0 else n
     
     def mode(self):
-        return mode(self.get_rows(nan = False)) if self.rows > 0 else n
+        return mode(self.get(nan = False)) if self.rows > 0 else n
 
-    def get_info(self, string = False):
+    def info(self, string = False):
         info = [self.name, self.mean(), self.median(), self.mode(), self.std(), self.span(), self.density()]
         info = [self.to_string(el) for el in info] if string else info
         return info
@@ -229,11 +230,11 @@ class numerical_data_class(data_class):
     
     def __str__(self):
         out = super().__str__()
-        out  += nl + 'min     ' + self.to_string(self.min())
-        out  += nl + 'max     ' + self.to_string(self.max())
-        out  += nl + 'mean    ' + self.to_string(self.mean())
-        out  += nl + 'std     ' + self.to_string(self.std())
-        return out
+        table = [['min   ', 'max', 'mean', 'std']]
+        values = [self.min(), self.max(), self.mean(), self.std()]
+        table += [[self.to_string(el) for el in values]]
+        table = tabulate(transpose(table))
+        return out + nl + table
 
 
 
@@ -248,28 +249,28 @@ class datetime_data_class(numerical_data_class):
         self.form_delta = form_delta
 
     def std(self):
-        return std_datetime(self.get_rows(nan = False)) if self.rows > 0 else n
+        return std_datetime(self.get(nan = False)) if self.rows > 0 else n
     
     def density(self):
         span = self.span()
         return n if span == n else 100 * self.std() / span if span != 0 else 'inf'
 
     def mean(self):
-        return mean_datetime(self.get_rows(nan = False)) if self.rows > 0 else n
+        return mean_datetime(self.get(nan = False)) if self.rows > 0 else n
 
     def median(self):
-        return median_datetime(self.get_rows(nan = False)) if self.rows > 0 else n
+        return median_datetime(self.get(nan = False)) if self.rows > 0 else n
     
     def mode(self):
-        return mode_datetime(self.get_rows(nan = False)) if self.rows > 0 else n
+        return mode_datetime(self.get(nan = False)) if self.rows > 0 else n
 
-    def get_info(self, string = False):
-        info = super().get_info(False)
+    def info(self, string = False):
+        info = super().info(False)
         info = [self.to_string(el) for el in info] if string else info
         return info
 
     def to_string(self, el):
-         return n if el == n else time_to_string(el, self.form) if isinstance(el, dt.datetime) else timedelta_to_string(el, self.form_delta) if isinstance(el, dt.timedelta) else str(el)
+         return n if el == n else time_to_string(el, self.form) if isinstance(el, dt.datetime) else timedelta_to_string(el, self.form_delta) if isinstance(el, dt.timedelta) else el if isinstance(el,str) else str(round(el, 1))
 
     def get_index(self):
         ref = self.min()
@@ -288,7 +289,7 @@ class datetime_data_class(numerical_data_class):
         return new
 
     def __str__(self):
-        return super().__str__() + sp + self.form_delta
+        return super().__str__().rstrip() + sp + self.form_delta
 
 
 

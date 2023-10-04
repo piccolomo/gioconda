@@ -38,13 +38,12 @@ def read_data(file_name, delimiter = ',', header = False, log = True):
     print('data loaded!\n') if log else None
     return data
 
-test = read_data(test_data_path, header = True, log = False)
+data = read_data(test_data_path, header = True, log = False)
 
-test.to_datetime('d1', '%Y-%m-%d', 'years')
-test.to_datetime('d2', '%Y-%m-%d', 'years')
-test.to_float('n1')
-test.to_float('n2')
-
+data.to_datetime('d1', '%Y-%m-%d', 'years')
+data.to_datetime('d2', '%Y-%m-%d', 'years')
+data.to_float('n1')
+data.to_float('n2')
 
 
 def get_pickle_path(name):
