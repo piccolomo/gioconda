@@ -198,7 +198,7 @@ class matrix_class():
 
 
         
-    def crosstab(self, col1, col2, log = True, length = 5):
+    def tab(self, col1, col2, log = True, length = 5):
         c1, c2 = self.col(col1), self.col(col2)
         unique1 = c1.cross_unique(c2)
         unique2 = c2.cross_unique(c1)
@@ -212,6 +212,27 @@ class matrix_class():
         print(table) if log else None
         print(nl + 'Cramers:', round(100 * corr, 1) if corr != n else n, '%') if log else None
         return corr
+
+    def crosstab(self, col1, col2, log = True):
+        c1, c2 = self.col(col1), self.col(col2)
+        unique1 = c1.cross_unique(c2)
+        unique2 = c2.cross_unique(c1)
+        sub_data = [self.where(u1, col1).col(col2) for u1 in unique1]
+        table = [[data.mean(), data.std()] for data in sub_data]
+        std = mean([data[1] for data in table])
+        corr = 1 - std / c2.std()
+        table = [[c2.to_string(el) for el in data] for data in table]
+        unique1 = [c1.to_string(el) for el in unique1]
+        unique2 = [c2.to_string(el) for el in unique2]
+        table = [[unique1[i]] + table[i] for i in range(len(table))]
+        header = [c1.name + ' / ' + c2.name, 'mean', 'std']
+        table = tabulate(table, headers = header, decimals = 1)
+        print(table) if log else None
+        print(nl + 'corr:', round(100 * corr, 1), '%') if log else None
+        return corr
+
+
+
     
 
     def mix_correlation(self, col1, col2):
