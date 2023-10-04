@@ -50,47 +50,53 @@ class data_class():
         return self.type == 'categorical'
     
 
+    def count(self, n, norm = False):
+        c = len(self.where(n))
+        return 100 * c / self.rows if norm else c
+
+    def nan(self, norm = False):
+        return self.count(n, norm)
+
+    def not_nan(self, norm = False):
+        c = self.count(n, norm = norm)
+        t = self.rows if norm else 1
+        return t - c
+
+    def counts(self, norm = False, nan = True):
+        u = unique(self.get(nan = nan))
+        v = [self.count(el, norm) for el in u]
+        c = transpose([u, v])
+        return sorted(c, key = lambda el: self.min() if isinstance(el[1], str) else el[1], reverse = True)
+
+    def print_counts(self, norm = False, nan = True, length = 10):
+        counts = self.counts(norm = norm, nan = nan) [: length]
+        return print(tabulate(counts, headers = [self.name, 'count']) + nl)
+
+    def unique(self, nan = True):
+        return [el[0] for el in self.counts(norm = 0, nan = nan)]
+        #return unique(self.get(nan = nan, string = string))
+
+
     def where(self, value):
         rows = [i for i in self.Rows if self.data[i] == value]
         return rows
 
-    def count(self, n):
-        return len(self.where(n))
-
-    def nan(self):
-        return self.count(n)
-
-    def not_nan(self):
-        return self.rows - self.count(n)
-
-    def counts(self, norm = False, nan = True, length = 10):
-        u = unique(self.get(nan = nan))
-        v = [self.count(el) for el in u]
-        v = normalize(v) if norm else v
-        c = transpose([u, v])[ : length]
-        return sorted(c, key = lambda el: el[1], reverse = True)
-
-    def print_counts(self, norm = False, nan = True, length = 10):
-        counts = self.counts(norm = norm, nan = nan, length = length)
-        return print(tabulate(counts, headers = [self.name, 'count']) + nl)
-
-    def unique(self, nan = True):
-        return [el[0] for el in self.counts(0, nan)]
-        #return unique(self.get(nan = nan, string = string))
-
-    def select(self, el, data):
+    def select(self, value, data):
         new = data.empty()
-        new_data = [data.data[row] for row in self.Rows if self.data[row] == el]
-        new.set_data(new_data)
+        rows = self.where(value)
+        new.set_data(data.get(rows))
         return new
+
+    def cross_count(self, value, data, norm = False):
+        s = self.select(value, data)
+        c = s.not_nan() if s.is_categorical() else s.mean()
+        return 100 * c / self.rows if norm else c
 
     def cross_counts(self, data, norm = False, nan = True):
         u = self.unique(nan)
-        v = [self.select(el, data) for el in u]
-        v = [el.not_nan() for el in v] if data.is_categorical() else [el.mean() for el in v] 
-        v = normalize(v) if norm else v
+        v = [self.cross_count(el, data, norm) for el in u]
         c = transpose([u, v])
-        return sorted(c, key = lambda el: el[1], reverse = True)
+        return sorted(c, key = lambda el: data.min() if isinstance(el[1], str) else el[1], reverse = True)
 
     def cross_unique(self, data, nan = True):
         return [el[0] for el in self.cross_counts(data, 0, nan)]
@@ -116,7 +122,7 @@ class data_class():
         firsts = ', '.join(self.get(5, string = 1))
         lasts = ', '.join(self.get(5, string = 1))
         table = [['name', 'type', 'rows', 'nan', 'unique', 'firsts', 'lasts']]
-        table += [[self.name, self.type, self.rows, self.nan(), len(self.unique()), firsts, lasts]]
+        table += [[self.name, self.type, self.rows, self.nan(), len(self.unique(nan = True)), firsts, lasts]]
         return tabulate(transpose(table))
 
     def __repr__(self):
@@ -161,7 +167,7 @@ class categorical_data_class(data_class):
     
 
     def info(self, normalize = 1, rows = 10):
-        cols = [self.name, '']
+        cols = [self.name, 'count']
         table = self.counts(normalize, rows)[:rows]
         table = tabulate(table, headers = cols, decimals = 1)
         return table
@@ -219,7 +225,7 @@ class numerical_data_class(data_class):
         return mode(data) if r > 0 else n
 
     def info(self, string = False):
-        info = [self.name, self.mean(), self.median(), self.mode(), self.std(), self.span(), self.density()]
+        info = [self.name, self.mean(), self.median(), self.mode(), self.std(), self.span(), self.density(), self.nan(1)]
         info = [self.to_string(el) for el in info] if string else info
         return info
 
@@ -231,7 +237,7 @@ class numerical_data_class(data_class):
         return t, t
 
     def to_string(self, el):
-        return str(round(el, 1))
+        return el if isinstance(el, str) else str(round(el, 1))
     
     def __str__(self):
         out = super().__str__()

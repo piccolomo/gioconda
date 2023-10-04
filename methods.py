@@ -18,6 +18,10 @@ unique = lambda data: list(set(data))
 is_list = lambda data: isinstance(data, (list, range))
 normalize = lambda data: [100 * el / sum(data) for el in data]
 
+def custom_sort(item):
+    return (1, item) if isinstance(item, int) else (0, item)
+    
+
 def linspace(lower, upper, length = 10): # it returns a lists of numbers from lower to upper with given length
     slope = (upper - lower) / (length - 1) if length > 1 else 0
     return [lower + x * slope for x in range(length)]
@@ -41,13 +45,14 @@ def correlate_categorical(x, y):
 def cramers(confusion_matrix):
     confusion_matrix = np.array(confusion_matrix)
     chi2 = stats.chi2_contingency(confusion_matrix)[0]
-    n = confusion_matrix.sum()
-    phi2 = chi2 / n
-    r,k = confusion_matrix.shape
-    phi2corr = max(0, phi2 - ((k-1)*(r-1))/(n-1))    
-    rcorr = r - ((r-1)**2)/(n-1)
-    kcorr = k - ((k-1)**2)/(n-1)
-    return np.sqrt(phi2corr / min( (kcorr-1), (rcorr-1)))
+    s = confusion_matrix.sum()
+    phi2 = chi2 / s
+    r, k = confusion_matrix.shape
+    phi2corr = max(0, phi2 - ((k - 1) * (r - 1))/(s - 1))    
+    rcorr = r - ((r - 1) ** 2) / (s - 1)
+    kcorr = k - ((k - 1) ** 2 )/ (s - 1)
+    d = min( (kcorr - 1), (rcorr - 1))
+    return np.sqrt(phi2corr / d) if d != 0 else n
 
 
 correct_index = lambda r, R: 0 if r < -R else r + R if r < 0 else R if r > R else r

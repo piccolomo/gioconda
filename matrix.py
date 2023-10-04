@@ -169,18 +169,25 @@ class matrix_class():
 
     def unique(self, col, nan = True):
         return self.col(col).unique(nan = nan)
+
+    def cross_unique(self, col1, col2, nan = True):
+        return self.col(col1).cross_unique(self.col(col2), nan = nan)
+
     
-    def counts(self, col, normalize = True):
-        return self.col(col).counts(normalize)
+    def count(self, el, col, norm = False):
+        return self.col(col).count(el, norm)
+    
+    def counts(self, col, norm = True):
+        return self.col(col).counts(norm)
 
     def numerical_info(self):
-        cols = ['i', 'col', 'mean', 'median', 'mode', 'std', 'span', 'density']
+        cols = ['i', 'col', 'mean', 'median', 'mode', 'std', 'span', 'density', 'nan']
         info = [[self.get_col_index(col)] + self.col(col).info() for col in self.numerical_cols()]
         table = tabulate(info, headers = cols, decimals = 1)
         print(table)
 
     def datetime_info(self, form = 'days'):
-        cols = ['i', 'col', 'mean', 'median', 'mode', 'std', 'span', 'density']
+        cols = ['i', 'col', 'mean', 'median', 'mode', 'std', 'span', 'density', 'nan']
         info = [[self.get_col_index(col)] + self.col(col).info(string = True) for col in self.datetime_cols()]
         table = tabulate(info, headers = cols, decimals = 1)
         print(table)
@@ -190,29 +197,22 @@ class matrix_class():
         [self.col(col).print_counts(norm = norm, length = length) for col in cols if self.is_categorical(col)]
 
 
-
         
-    def tabulate(self, col1, col2, length = 5, norm = True, log = False):
+    def crosstab(self, col1, col2, log = True, length = 5):
         c1, c2 = self.col(col1), self.col(col2)
         unique1 = c1.cross_unique(c2)
         unique2 = c2.cross_unique(c1)
-        counts = [[self.where(u1, col1).where(u2, col2).rows for u2 in unique2] for u1 in unique1]
-        counts = [normalize(el) for el in counts] if norm else counts
-        corr = [correlate(el) for el in counts]
-        table = [[unique1[i]] + counts[i][:length] + [corr[i]] for i in range(len(counts))]
-        header = [c1.name + ' / ' + c2.name] + unique2[:length] + ['corr']
+        counts = [[self.where(u1, col1).count(u2, col2, norm = False) for u2 in unique2] for u1 in unique1]
+        corr = cramers(counts)
+        unique1 = [c1.to_string(el) for el in unique1]
+        unique2 = [c2.to_string(el) for el in unique2]
+        table = [[unique1[i]] + counts[i][:length] for i in range(len(counts))]
+        header = [c1.name + ' / ' + c2.name] + unique2[:length]
         table = tabulate(table, headers = header, decimals = 1)
         print(table) if log else None
-        corr = mean(corr)
-        print('mean correlation', round(corr, 1), '%')  if log else None
-        return counts
-        
-    def categorical_correlation(self, col1, col2):
-        return cramers(self.categorical_tab(col1, col2))
+        print(nl + 'Cramers:', round(100 * corr, 1) if corr != n else n, '%') if log else None
+        return corr
     
-    def numerical_correlation_(self, col1, col2):
-        c1, c2 = self.col(col1), self.col(col2)
-        return correlate_numerical(c1.rows(), c2.rows())
 
     def mix_correlation(self, col1, col2):
         c1, c2 = self.col(col1), self.col(col2)
@@ -249,20 +249,7 @@ class matrix_class():
         plt.ylabel(c2.name)
         plt.show()
         
-    def categorical_tab(self, col1, col2, length = 5, norm = True, log = False):
-        c1, c2 = self.get_col(col1), self.get_col(col2)
-        unique1 = c1.cross_unique(c2)
-        unique2 = c2.cross_unique(c1)
-        counts = [[self.where(u1, col1).where(u2, col2).rows for u2 in unique2] for u1 in unique1]
-        counts = [normalize(el) for el in counts] if norm else counts
-        corr = [correlate(el) for el in counts]
-        table = [[unique1[i]] + counts[i][:length] + [corr[i]] for i in range(len(counts))]
-        header = [c1.name + ' / ' + c2.name] + unique2[:length] + ['corr']
-        table = tabulate_data(table, headers = header, grid = True, decimals = 1)
-        print(table) if log else None
-        corr = mean(corr)
-        print('mean correlation', round(corr, 1), '%')  if log else None
-        return counts
+
         
     def correlate_categorical(self, col1, col2):
         return cramers(self.categorical_tab(col1, col2))
@@ -318,7 +305,7 @@ class matrix_class():
     def tabulate_data(self, header = True, index = False, rows = None, cols = None, decimals = 1):
         headers = self.names(cols, index) if header else None
         footers = self.types(cols) if header else None
-        return tabulate(self.section(rows, cols, index, 1), headers = headers, footers = footers, decimals = decimals)
+        return tabulate(self.section(rows, cols, index, 1) + [self.get_cols_indexes()], headers = headers, footers = footers, decimals = decimals)
 
     def tabulate_types(self, cols = None):
         return tabulate(transpose([self.names(cols), self.get_cols_indexes(cols), self.types(cols)]), headers = ['name', 'id', 'type'])
@@ -327,7 +314,7 @@ class matrix_class():
         return tabulate([[self.rows, self.cols]], headers = ['rows', 'cols'])
 
     def tabulate_info(self, cols = None):
-        return self.tabulate_types(cols) + 2 * nl + self.tabulate_dimensions()
+        return self.tabulate_dimensions() + 2 * nl + self.tabulate_types(cols)
 
     def print(self, header = True, index = False, info = True, rows = None, cols = None, decimals = 1):
         print(self.tabulate_data(header, index, rows, cols, decimals))
