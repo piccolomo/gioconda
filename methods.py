@@ -42,7 +42,7 @@ def cramers(confusion_matrix):
     confusion_matrix = np.array(confusion_matrix)
     chi2 = stats.chi2_contingency(confusion_matrix)[0]
     n = confusion_matrix.sum()
-    phi2 = chi2/n
+    phi2 = chi2 / n
     r,k = confusion_matrix.shape
     phi2corr = max(0, phi2 - ((k-1)*(r-1))/(n-1))    
     rcorr = r - ((r-1)**2)/(n-1)

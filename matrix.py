@@ -272,3 +272,97 @@ class matrix_class():
         plt.xlabel(c1.name)
         plt.ylabel(c2.name)
         plt.show()
+        
+    def categorical_tab(self, col1, col2, length = 5, norm = True, log = False):
+        c1, c2 = self.get_col(col1), self.get_col(col2)
+        unique1 = c1.cross_unique(c2)
+        unique2 = c2.cross_unique(c1)
+        counts = [[self.where(u1, col1).where(u2, col2).rows for u2 in unique2] for u1 in unique1]
+        counts = [normalize(el) for el in counts] if norm else counts
+        corr = [correlate(el) for el in counts]
+        table = [[unique1[i]] + counts[i][:length] + [corr[i]] for i in range(len(counts))]
+        header = [c1.name + ' / ' + c2.name] + unique2[:length] + ['corr']
+        table = tabulate_data(table, headers = header, grid = True, decimals = 1)
+        print(table) if log else None
+        corr = mean(corr)
+        print('mean correlation', round(corr, 1), '%')  if log else None
+        return counts
+        
+    def correlate_categorical(self, col1, col2):
+        return cramers(self.categorical_tab(col1, col2))
+    
+    def correlate_numerical(self, col1, col2):
+        c1, c2 = self.get_col(col1), self.get_col(col2)
+        return correlate_numerical(c1.get_index(), c2.get_index())
+
+    def correlate_categorical_to_numerical(self, col1, col2):
+        c1, c2 = self.get_col(col1), self.get_col(col2)
+        i1 = c1.get_index(c2)
+        i2 = c2.get_index()
+        return correlate_numerical(i1, i2)
+
+    def correlate(self, col1, col2):
+        print(col1, col2)
+        c1, c2 = self.get_col(col1), self.get_col(col2)
+        cc = c1.is_categorical() and c2.is_categorical()
+        cn = c1.is_categorical() and not c2.is_categorical()
+        nc = not c1.is_categorical() and c2.is_categorical()
+        nn = not c1.is_categorical() and not c2.is_categorical()
+        return self.correlate_categorical(col1, col2) if cc else self.correlate_numerical(col1, col2) if nn else self.correlate_categorical_to_numerical(col1, col2) if cn else self.correlate_categorical_to_numerical(col2, col1)
+
+
+    def correct_cols(self, cols):
+        return self.get_cols_indexes(cols) if is_list(cols) or cols is None else index_to_range(self.get_col_index(cols), self.cols)
+        
+    def correct_rows(self, rows):
+        return correct_range(rows, self.rows) if is_list(rows) or rows is None else index_to_range(rows, self.rows)
+
+
+    def copy(self):
+        return copy(self)
+
+    def subset(self, rows = None):
+        rows = self.correct_rows(rows)
+        rows = correct_range(rows, self.rows) if is_list(rows) else index_to_range(rows, self.rows)
+        new = matrix_class()
+        data = [data.subset(rows) for data in self.data]
+        new.set_data(data)
+        #new.set_names(self.get_names())
+        return new
+        
+    def part(self, start = None, end = None):
+        start = correct_left_index(start, self.rows)
+        end = correct_right_index(end, self.rows)
+        return self.subset(range(start, end))
+
+    def where(self, value, col):
+        return self.subset(self.get_col(col).where(value))
+
+
+    def tabulate_data(self, header = True, index = False, rows = None, cols = None, grid = False, decimals = 1):
+        return tabulate_data(self.get_section(rows, cols, index, 1), headers = self.get_names(cols, index) if header else [], decimals = decimals, grid = grid)
+        print(table)
+
+    def tabulate_types(self, rows = None, cols = None, grid = False):
+        return tabulate_data([self.get_cols_indexes(cols), self.get_types(cols)], headers = self.get_names(cols), grid = False)
+        print(table)
+
+    def tabulate_dimensions(self):
+        return tabulate_data([[self.rows, self.cols]], headers = ['rows', 'cols'], grid = 1)
+
+    def tabulate(self, header = True, index = False, info = True, rows = None, cols = None, grid = False, decimals = 1):
+        rows = self.correct_rows(rows)
+        cols = self.correct_cols(cols)
+        table = self.tabulate_data(header, index, rows, cols, grid, decimals)
+        table = table + nl + self.tabulate_types(rows, cols, grid) if info else None
+        table = table + nl + self.tabulate_dimensions() if info else None
+        return table
+
+    def print(self, header = True, index = True, info = True, rows = None, cols = None, grid = False, decimals = 1):
+        print(self.tabulate(header, index, info, rows, cols, grid, decimals))
+
+    def __repr__(self):
+        rows, cols = 10, 3
+        rows = list(range(rows)) + list(range(-rows, 0))
+        cols = list(range(cols)) + list(range(-cols, 0))
+        return self.tabulate(1, 1, 1, rows, cols)
