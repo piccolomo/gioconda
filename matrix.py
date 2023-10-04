@@ -233,9 +233,8 @@ class matrix_class():
 
     def plot(self, col1, col2):
         c1, c2 = self.col(col1), self.col(col2)
-        s1 = True if c1.is_datetime() else False
-        s2 = True if c2.is_datetime() else False
-        x, y = c1.get(string = s1), c2.get(string = s2)
+        x, y = c1.get(), c2.get()
+        x, y = transpose([el for el in transpose([x, y]) if n not in el]) if c1.is_datetime() or c2.is_datetime() else (x, y)
         plt.figure(0, figsize = (15, 8))
         plt.clf()
         plt.scatter(x, y)
