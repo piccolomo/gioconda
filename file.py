@@ -6,7 +6,7 @@ import os
 
 # File Utilities
 bongo_folder = os.path.dirname(os.path.realpath(__file__))
-test_data_path = plx.join_paths(bongo_folder, "test_data.csv")
+test_data_path = plx.join_paths(bongo_folder, "test_data2.csv")
 
 base_folder = plx.parent_folder(plx.script_folder())
 data_folder =  plx.join_paths(base_folder, "data")

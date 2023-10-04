@@ -32,7 +32,7 @@ class data_class():
         
     def get(self, rows = None, nan = True, string = False):
         rows = self.correct_rows(rows)
-        return [self.get_element(row, string) for row in rows if nan or (not nan and self.get(row) != n)]
+        return [self.get_element(row, string) for row in rows if nan or (not nan and self.get_element(row) != n)]
 
     
     def apply(self, function, *args):
