@@ -219,7 +219,7 @@ class matrix_class():
         unique2 = c2.cross_unique(c1)
         sub_data = [self.where(u1, col1).col(col2) for u1 in unique1]
         table = [[data.mean(), data.std()] for data in sub_data]
-        std = mean([data[1] for data in table])
+        std = mean([data[1] for data in table if data[1] != n])
         corr = 1 - std / c2.std()
         table = [[c2.to_string(el) for el in data] for data in table]
         unique1 = [c1.to_string(el) for el in unique1]
