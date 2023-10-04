@@ -241,7 +241,7 @@ class matrix_class():
         plt.xlabel(c1.name); plt.ylabel(c2.name)
         plt.xticks(rotation = 90) if not c1.is_numerical() else None
         #plt.yticks(rotation = 90, ha = 'right') if not c2.is_numerical() else None
-        plt.tight_layout(); plt.pause(0.1); plt.show(block = 1); plt.clf()
+        plt.tight_layout(); plt.pause(0.1); plt.show(block = 1); plt.clf(); plt.close()
         
 
         
