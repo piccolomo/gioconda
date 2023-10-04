@@ -241,7 +241,7 @@ class matrix_class():
         plt.xlabel(c1.name)
         plt.ylabel(c2.name)
         plt.tight_layout()
-        plt.show()
+        plt.show(block = 0)
         
 
         
