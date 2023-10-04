@@ -339,27 +339,26 @@ class matrix_class():
         return self.subset(self.get_col(col).where(value))
 
 
-    def tabulate_data(self, header = True, index = False, rows = None, cols = None, grid = False, decimals = 1):
-        return tabulate_data(self.get_section(rows, cols, index, 1), headers = self.get_names(cols, index) if header else [], decimals = decimals, grid = grid)
+    def tabulate_data(self, header = True, index = False, rows = None, cols = None, decimals = 1):
+        headers = self.names(cols, index) if header else None
+        return tabulate(self.section(rows, cols, index, 1), headers = headers, decimals = decimals)
         print(table)
 
-    def tabulate_types(self, rows = None, cols = None, grid = False):
-        return tabulate_data([self.get_cols_indexes(cols), self.get_types(cols)], headers = self.get_names(cols), grid = False)
+    def tabulate_types(self, rows = None, cols = None):
+        return tabulate(transpose([self.names(cols), self.get_cols_indexes(cols), self.types(cols)]), headers = ['name', 'id', 'type'])
         print(table)
 
     def tabulate_dimensions(self):
-        return tabulate_data([[self.rows, self.cols]], headers = ['rows', 'cols'], grid = 1)
+        return tabulate([[self.rows, self.cols]], headers = ['rows', 'cols'])
 
-    def tabulate(self, header = True, index = False, info = True, rows = None, cols = None, grid = False, decimals = 1):
-        rows = self.correct_rows(rows)
-        cols = self.correct_cols(cols)
-        table = self.tabulate_data(header, index, rows, cols, grid, decimals)
-        table = table + nl + self.tabulate_types(rows, cols, grid) if info else None
-        table = table + nl + self.tabulate_dimensions() if info else None
+    def tabulate(self, header = True, index = False, info = True, rows = None, cols = None, decimals = 1):
+        table = self.tabulate_dimensions() + nl * 2 + self.tabulate_types(rows, cols) + nl * 2 if info else ''
+        table = table + self.tabulate_data(header, index, rows, cols, decimals)
         return table
 
-    def print(self, header = True, index = True, info = True, rows = None, cols = None, grid = False, decimals = 1):
-        print(self.tabulate(header, index, info, rows, cols, grid, decimals))
+    def print(self, header = True, index = True, info = True, rows = None, cols = None, decimals = 1):
+        print(self.tabulate(header, index, info, rows, cols, decimals))
+
 
     def __repr__(self):
         rows, cols = 10, 3

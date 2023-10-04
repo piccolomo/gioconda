@@ -192,14 +192,14 @@ class numerical_data_class(data_class):
         return min(self.get(nan = False), default = n)
     
     def max(self):
-        return max(self.get_rows(nan = False), default = n)
+        return max(self.get(nan = False), default = n)
 
     def span(self):
         m, M = self.min(), self.max()
         return M - m if n not in [m, M] else n
 
     def std(self):
-        data = self.get_rows(nan = False); r = len(data)
+        data = self.get(nan = False); r = len(data)
         return std(data) if r > 0 else n
     
     def density(self):
@@ -207,15 +207,15 @@ class numerical_data_class(data_class):
         return n if span == n else 100 * self.std() / span if span != 0 else 'inf'
 
     def mean(self):
-        data = self.get_rows(nan = False); r = len(data)
+        data = self.get(nan = False); r = len(data)
         return mean(data) if r > 0 else n
 
     def median(self):
-        data = self.get_rows(nan = False); r = len(data)
+        data = self.get(nan = False); r = len(data)
         return median(data) if r > 0 else n
     
     def mode(self):
-        data = self.get_rows(nan = False); r = len(data)
+        data = self.get(nan = False); r = len(data)
         return mode(data) if r > 0 else n
 
     def info(self, string = False):
@@ -254,7 +254,7 @@ class datetime_data_class(numerical_data_class):
         self.form_delta = form_delta
 
     def std(self):
-        data = self.get_rows(nan = False); r = len(data)
+        data = self.get(nan = False); r = len(data)
         return std_datetime(data) if r > 0 else n
     
     def density(self):
@@ -262,16 +262,16 @@ class datetime_data_class(numerical_data_class):
         return n if span == n else 100 * self.std() / span if span != 0 else 'inf'
 
     def mean(self):
-        data = self.get_rows(nan = False); r = len(data)
-        return mean_datetime(self.get_rows(nan = False)) if r > 0 else n
+        data = self.get(nan = False); r = len(data)
+        return mean_datetime(self.get(nan = False)) if r > 0 else n
 
     def median(self):
-        data = self.get_rows(nan = False); r = len(data)
-        return median_datetime(self.get_rows(nan = False)) if r > 0 else n
+        data = self.get(nan = False); r = len(data)
+        return median_datetime(self.get(nan = False)) if r > 0 else n
     
     def mode(self):
-        data = self.get_rows(nan = False); r = len(data)
-        return mode_datetime(self.get_rows(nan = False)) if r > 0 else n
+        data = self.get(nan = False); r = len(data)
+        return mode_datetime(self.get(nan = False)) if r > 0 else n
 
     def info(self, string = False):
         info = super().info(False)
