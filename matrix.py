@@ -233,15 +233,16 @@ class matrix_class():
 
     def plot(self, col1, col2):
         c1, c2 = self.col(col1), self.col(col2)
-        x, y = c1.get(), c2.get()
+        s1 = True if c1.is_datetime() else False
+        s2 = True if c2.is_datetime() else False
+        x, y = c1.get(string = s1), c2.get(string = s2)
         plt.figure(0, figsize = (15, 8))
         plt.clf()
-        #plt.rcParams["figure.figsize"] = (40,3)
         plt.scatter(x, y)
-        plt.xlabel(c1.name)
-        plt.ylabel(c2.name)
-        plt.tight_layout()
-        plt.show(block = 0)
+        plt.xlabel(c1.name); plt.ylabel(c2.name)
+        plt.xticks(rotation = 90) if not c1.is_numerical() else None
+        #plt.yticks(rotation = 90, ha = 'right') if not c2.is_numerical() else None
+        plt.tight_layout(); plt.pause(0.1); plt.show(block = 1); plt.clf()
         
 
         
