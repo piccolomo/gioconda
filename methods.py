@@ -4,7 +4,8 @@ from tabulate import SEPARATING_LINE as hline
 import datetime as dt
 from scipy import stats
 from copy import deepcopy as copy
-import plotext as plt
+import matplotlib.pyplot as plt
+import plotext as plx
 import pandas as pd
 
 transpose = lambda data: list(map(list, zip(*data)))
@@ -115,12 +116,12 @@ def tabulate(data, headers = None, footers = None, decimals = 1):
     Cols = range(cols)
     t = [[(delimiter if i != 0 else sp) + el for el in t[i]] for i in Cols]
     ls = [max([len(el) for el in col]) for col in t]
-    Cols = np.array(Cols)[np.cumsum(ls) <= plt.tw()]
+    Cols = np.array(Cols)[np.cumsum(ls) <= plx.tw()]
     t = [[pad(el, ls[i]) for el in t[i]] for i in Cols]
     d = transpose(t)
     lines = [''.join(line) for line in d]
-    lines[0] = plt.colorize(lines[0], style = 'bold') if headers is not None else lines[0]
-    lines[-1] = plt.colorize(lines[-1], style = 'bold') if footers is not None else lines[-1]
+    lines[0] = plx.colorize(lines[0], style = 'bold') if headers is not None else lines[0]
+    lines[-1] = plx.colorize(lines[-1], style = 'bold') if footers is not None else lines[-1]
     out = nl.join(lines)
     return out
 

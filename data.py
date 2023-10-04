@@ -172,14 +172,6 @@ class categorical_data_class(data_class):
         table = tabulate(table, headers = cols, decimals = 1)
         return table
 
-    def get_index(self, data = None):
-        u = self.unique() if data is None else self.cross_unique(data)
-        return [u.index(el) if el != n else n for el in self.data]
-
-    def get_ticks(self):
-        u = self.unique(nan = 0)
-        return (range(len(u)), u)
-
 
 class numerical_data_class(data_class):
     def __init__(self, data):
@@ -228,13 +220,6 @@ class numerical_data_class(data_class):
         info = [self.name, self.mean(), self.median(), self.mode(), self.std(), self.span(), self.density(), self.nan(1)]
         info = [self.to_string(el) for el in info] if string else info
         return info
-
-    def get_index(self):
-        return self.data
-
-    def get_ticks(self):
-        t = list(np.linspace(self.min(), self.max(), 5))
-        return t, t
 
     def to_string(self, el):
         return el if isinstance(el, str) else str(round(el, 1))
@@ -286,16 +271,6 @@ class datetime_data_class(numerical_data_class):
 
     def to_string(self, el):
          return n if el == n else time_to_string(el, self.form) if isinstance(el, dt.datetime) else timedelta_to_string(el, self.form_delta) if isinstance(el, dt.timedelta) else el if isinstance(el,str) else str(round(el, 1))
-
-    def get_index(self):
-        ref = self.min()
-        return [timedelta_to_number(el - ref, self.form_delta) if el != n else n for el in self.data]
-
-    def get_ticks(self):
-        t = linspace(0, timedelta_to_number(self.span(), self.form_delta), 5)
-        l = datetime_linspace(self.min(), self.max(), 5)
-        l = [self.to_string(el)  for el in l]
-        return t, l
 
     def empty(self):
         new = self.__class__([], self.form, self.form_delta)

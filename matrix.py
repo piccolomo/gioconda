@@ -218,56 +218,29 @@ class matrix_class():
         unique1 = c1.cross_unique(c2)
         unique2 = c2.cross_unique(c1)
         sub_data = [self.where(u1, col1).col(col2) for u1 in unique1]
-        table = [[data.mean(), data.std()] for data in sub_data]
+        table = [[data.mean(), data.std(), data.rows] for data in sub_data]
         std = mean([data[1] for data in table if data[1] != n])
         corr = 1 - std / c2.std()
         table = [[c2.to_string(el) for el in data] for data in table]
         unique1 = [c1.to_string(el) for el in unique1]
         unique2 = [c2.to_string(el) for el in unique2]
         table = [[unique1[i]] + table[i] for i in range(len(table))]
-        header = [c1.name + ' / ' + c2.name, 'mean', 'std']
+        header = [c1.name + ' / ' + c2.name, 'mean', 'std', 'len']
         table = tabulate(table, headers = header, decimals = 1)
         print(table) if log else None
         print(nl + 'corr:', round(100 * corr, 1), '%') if log else None
         return corr
 
-
-
-    
-
-    def mix_correlation(self, col1, col2):
-        c1, c2 = self.col(col1), self.col(col2)
-        i1 = c1.get_index(c2)
-        i2 = c2.get_index()
-        return correlate_numerical(i1, i2)
-
-    def correlation(self, col1, col2):
-        c1, c2 = self.col(col1), self.col(col2)
-        cc = c1.is_categorical() and c2.is_categorical()
-        cn = c1.is_categorical() and not c2.is_categorical()
-        nc = not c1.is_categorical() and c2.is_categorical()
-        nn = not c1.is_categorical() and not c2.is_categorical()
-        return self.correlate_categorical(col1, col2) if cc else self.correlate_numerical(col1, col2) if nn else self.correlate_categorical_to_numerical(col1, col2) if cn else self.correlate_cat_to_num(col2, col1)
-
-
-
-
-
-
-
-
     def plot(self, col1, col2):
         c1, c2 = self.col(col1), self.col(col2)
-        x = c1.get_index(data = c2) if c1.is_categorical() else c1.get_index()
-        y = c2.get_index(data = c1) if c2.is_categorical() else c2.get_index()
-        xy = [el for el in transpose([x, y]) if n not in el]
-        x, y = transpose(xy)
+        x, y = c1.get(), c2.get()
+        plt.figure(0, figsize = (15, 8))
         plt.clf()
+        #plt.rcParams["figure.figsize"] = (40,3)
         plt.scatter(x, y)
-        plt.xticks(*c1.get_ticks())
-        plt.yticks(*c2.get_ticks())
         plt.xlabel(c1.name)
         plt.ylabel(c2.name)
+        plt.tight_layout()
         plt.show()
         
 
