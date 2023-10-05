@@ -184,13 +184,13 @@ class matrix_class():
         cols = ['i', 'col', 'mean', 'median', 'mode', 'std', 'span', 'density', 'nan']
         info = [[self.get_col_index(col)] + self.col(col).info() for col in self.numerical_cols()]
         table = tabulate(info, headers = cols, decimals = 1)
-        print(table)
+        print(table + nl)
 
     def datetime_info(self, form = 'days'):
         cols = ['i', 'col', 'mean', 'median', 'mode', 'std', 'span', 'density', 'nan']
         info = [[self.get_col_index(col)] + self.col(col).info(string = True) for col in self.datetime_cols()]
         table = tabulate(info, headers = cols, decimals = 1)
-        print(table)
+        print(table + nl)
 
     def categorical_info(self, norm = 0, cols = None, length = 10):
         cols = self.correct_cols(cols)
@@ -210,7 +210,7 @@ class matrix_class():
         header = [c1.name + ' / ' + c2.name] + unique2[:length]
         table = tabulate(table, headers = header, decimals = 1)
         print(table) if log else None
-        print(nl + 'Cramers:', round(100 * corr, 1) if corr != n else n, '%') if log else None
+        print(' Cramers:', round(100 * corr, 1) if corr != n else n, '%' + nl) if log else None
         return corr
 
     def crosstab(self, col1, col2, log = True):
@@ -228,10 +228,10 @@ class matrix_class():
         header = [c1.name + ' / ' + c2.name, 'mean', 'std', 'len']
         table = tabulate(table, headers = header, decimals = 1)
         print(table) if log else None
-        print(nl + 'corr:', round(100 * corr, 1), '%') if log else None
+        print('Correlation:', round(100 * corr, 1), '%' + nl) if log else None
         return corr
 
-    def plot(self, col1, col2):
+    def crossplot(self, col1, col2):
         c1, c2 = self.col(col1), self.col(col2)
         x, y = c1.get(), c2.get()
         x, y = transpose([el for el in transpose([x, y]) if n not in el]) if c1.is_datetime() or c2.is_datetime() else (x, y)
@@ -242,32 +242,24 @@ class matrix_class():
         plt.xticks(rotation = 90) if not c1.is_numerical() else None
         #plt.yticks(rotation = 90, ha = 'right') if not c2.is_numerical() else None
         plt.tight_layout(); plt.pause(0.1); plt.show(block = 1); plt.clf(); plt.close()
+
+    def plot(self, col, bins = 100):
+        c = self.col(col)
+        is_num = c.is_numerical() or c.is_datetime()
+        data = c.get(nan = True) if is_num else c.get(nan = False)
+        plt.figure(0, figsize = (15, 8))
+        plt.clf()
+        plt.hist(data, bins = min(bins, len(c.unique()))) if is_num else None
+        plt.bar(*transpose(self.col('type').counts())) if not is_num else None
+        #plt.bar(data)
+        plt.xlabel(c.name); plt.ylabel('count')
+        plt.xticks(rotation = 90) if not is_num else None
+        #plt.yticks(rotation = 90, ha = 'right') if not c2.is_numerical() else None
+        plt.tight_layout(); plt.pause(0.1); plt.show(block = 1); plt.clf(); plt.close()
+        
         
 
         
-    def correlate_categorical(self, col1, col2):
-        return cramers(self.categorical_tab(col1, col2))
-    
-    def correlate_numerical(self, col1, col2):
-        c1, c2 = self.get_col(col1), self.get_col(col2)
-        return correlate_numerical(c1.get_index(), c2.get_index())
-
-    def correlate_categorical_to_numerical(self, col1, col2):
-        c1, c2 = self.get_col(col1), self.get_col(col2)
-        i1 = c1.get_index(c2)
-        i2 = c2.get_index()
-        return correlate_numerical(i1, i2)
-
-    def correlate(self, col1, col2):
-        print(col1, col2)
-        c1, c2 = self.get_col(col1), self.get_col(col2)
-        cc = c1.is_categorical() and c2.is_categorical()
-        cn = c1.is_categorical() and not c2.is_categorical()
-        nc = not c1.is_categorical() and c2.is_categorical()
-        nn = not c1.is_categorical() and not c2.is_categorical()
-        return self.correlate_categorical(col1, col2) if cc else self.correlate_numerical(col1, col2) if nn else self.correlate_categorical_to_numerical(col1, col2) if cn else self.correlate_categorical_to_numerical(col2, col1)
-
-
     def correct_cols(self, cols):
         return self.get_cols_indexes(cols) if is_list(cols) or cols is None else index_to_range(self.get_col_index(cols), self.cols)
         
