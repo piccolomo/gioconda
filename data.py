@@ -1,15 +1,19 @@
 from bongo.methods import *
 
 class data_class():
-    def __init__(self, data):
+    def __init__(self, data = None):
         self.set_data(data)
 
-    def set_data(self, data):
+    def set_data(self, data = None):
+        data = [] if data is None else data
         self.data = data
         self.update_length()
         
     def set_type(self, type):
         self.type = type
+
+    def set_index(self, index):
+        self.index = index
 
 
     def update_length(self):
@@ -25,7 +29,9 @@ class data_class():
 
     def correct_rows(self, rows):
         return correct_range(rows, self.rows) if is_list(rows) or rows is None else index_to_range(rows, self.rows)
-        
+
+
+    
     def get_element(self, row, string = False):
         el = self.data[row]
         return n if el == n else self.to_string(el) if string else el
@@ -52,7 +58,7 @@ class data_class():
 
     def count(self, n, norm = False):
         c = len(self.where(n))
-        return 100 * c / self.rows if norm else c
+        return 100 * c / self.rows if norm and self.rows != 0 else c
 
     def nan(self, norm = False):
         return self.count(n, norm)
@@ -68,13 +74,19 @@ class data_class():
         c = transpose([u, v])
         return sorted(c, key = lambda el: self.min() if isinstance(el[1], str) else el[1], reverse = True)
 
+    
+    def tabulate_counts(self, norm = False, nan = True, length = 10):
+        header = [self.name, 'count']
+        table = self.counts(norm = norm, nan = nan)[ : length]
+        table = tabulate(table, header = header) + nl
+        return table
+
     def print_counts(self, norm = False, nan = True, length = 10):
-        counts = self.counts(norm = norm, nan = nan) [: length]
-        return print(tabulate(counts, headers = [self.name, 'count']) + nl)
+        print(self.tabulate_counts(norm, nan, length))
 
     def unique(self, nan = True):
-        return [el[0] for el in self.counts(norm = 0, nan = nan)]
-        #return unique(self.get(nan = nan, string = string))
+        #return [el[0] for el in self.counts(norm = 0, nan = nan)]
+        return unique(self.get(nan = nan))
 
 
     def where(self, value):
@@ -108,6 +120,7 @@ class data_class():
         new = self.__class__([])
         new.set_name(self.name)
         new.set_type(self.type)
+        new.set_index(self.index)
         return new
 
     def subset(self, rows):
@@ -118,12 +131,15 @@ class data_class():
     def part(self, a = None, b = None):
         return self.subset(range(a, b))
 
+    def basic_info(self):
+        unique = len(self.unique(nan = True))
+        return {'name': self.name, 'index': self.index, 'type': self.type, 'rows': self.rows, 'nan': self.nan(), 'unique': unique}
+
     def __str__(self):
-        firsts = ', '.join(self.get(5, string = 1))
-        lasts = ', '.join(self.get(5, string = 1))
-        table = [['name', 'type', 'rows', 'nan', 'unique', 'firsts', 'lasts']]
-        table += [[self.name, self.type, self.rows, self.nan(), len(self.unique(nan = True)), firsts, lasts]]
-        return tabulate(transpose(table))
+        info = self.basic_info()
+        table = [info.keys(), info.values()]
+        table = tabulate(transpose(table))
+        return table + nl
 
     def __repr__(self):
         return str(self)
@@ -149,6 +165,7 @@ class categorical_data_class(data_class):
         data = list(map(to_float, self.data))
         new = numerical_data_class(data)
         new.set_name(self.name)
+        new.set_index(self.index)
         return new
     
     def to_integer(self):
@@ -156,6 +173,7 @@ class categorical_data_class(data_class):
         data = list(map(to_int, self.data))
         new = numerical_data_class(data)
         new.set_name(self.name)
+        new.set_index(self.index)
         return new
         
     def to_datetime(self, form, form_delta):
@@ -163,18 +181,13 @@ class categorical_data_class(data_class):
         data = list(map(to_date, self.data))
         new = datetime_data_class(data, form, form_delta)
         new.set_name(self.name)
+        new.set_index(self.index)
         return new
-    
 
-    def info(self, normalize = 1, rows = 10):
-        cols = [self.name, 'count']
-        table = self.counts(normalize, rows)[:rows]
-        table = tabulate(table, headers = cols, decimals = 1)
-        return table
 
 
 class numerical_data_class(data_class):
-    def __init__(self, data):
+    def __init__(self, data = None):
         super().__init__(data)
         self.set_type('numerical')
 
@@ -216,22 +229,17 @@ class numerical_data_class(data_class):
         data = self.get(nan = False); r = len(data)
         return mode(data) if r > 0 else n
 
+    def numerical_info(self, string = False):
+        return {'name': self.name, 'mean': self.mean(), 'std': self.std(), 'density': self.density(), 'median': self.median(), 'mode': self.mode(), 'min': self.min(), 'max': self.max(), 'span': self.span(), 'nan': self.nan(1)}
+
     def info(self, string = False):
-        info = [self.name, self.mean(), self.median(), self.mode(), self.std(), self.span(), self.density(), self.nan(1)]
-        info = [self.to_string(el) for el in info] if string else info
+        info = super().info()
+        info.update(self.numerical_info(string = string))
         return info
 
     def to_string(self, el):
         return el if isinstance(el, str) else str(round(el, 1))
     
-    def __str__(self):
-        out = super().__str__()
-        table = [['min   ', 'max', 'mean', 'std']]
-        values = [self.min(), self.max(), self.mean(), self.std()]
-        table += [[self.to_string(el) for el in values]]
-        table = tabulate(transpose(table))
-        return out + nl + table
-
 
 
 class datetime_data_class(numerical_data_class):
@@ -264,22 +272,24 @@ class datetime_data_class(numerical_data_class):
         data = self.get(nan = False); r = len(data)
         return mode_datetime(self.get(nan = False)) if r > 0 else n
 
+    def numerical_info(self, string = False):
+        info = super().numerical_info(False)
+        info = {el : self.to_string(info[el]) for el in info} if string else info
+        return info
+
     def info(self, string = False):
         info = super().info(False)
-        info = [self.to_string(el) for el in info] if string else info
+        info = {el : self.to_string(info[el]) for el in info} if string else info
         return info
 
     def to_string(self, el):
-         return n if el == n else time_to_string(el, self.form) if isinstance(el, dt.datetime) else timedelta_to_string(el, self.form_delta) if isinstance(el, dt.timedelta) else el if isinstance(el,str) else str(round(el, 1))
+        return n if el == n else time_to_string(el, self.form) if isinstance(el, dt.datetime) else timedelta_to_string(el, self.form_delta) if isinstance(el, dt.timedelta) else el if isinstance(el,str) else str(round(el, 1))
 
     def empty(self):
         new = self.__class__([], self.form, self.form_delta)
         new.set_type(self.type)
         new.set_name(self.name)
+        new.set_index(self.index)
         return new
-
-    def __str__(self):
-        return super().__str__().rstrip() + sp + self.form_delta
-
 
 

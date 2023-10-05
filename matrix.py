@@ -4,20 +4,26 @@ from bongo.methods import *
 
 class matrix_class():
     
-    def __init__(self):
-        pass
+    def __init__(self, matrix = None):
+        self.create_data()
+        self.set_matrix(matrix)
 
-    def set_data(self, data):
-        self.data = data
-        self.update_dimensions()
+    def create_data(self):
+        self.data = []
+        self.update_size()
 
-    def set_matrix(self, matrix):
-        self.m = matrix
-        data = [categorical_data_class(data) for data in transpose(matrix)]
-        self.set_data(data)
-        self.set_names(self.Cols)
+    def set_matrix(self, matrix = None):
+        self.data = []
+        matrix = [[]] if matrix is None else matrix
+        [self.add_data(data) for data in transpose(matrix)]
+        
+    def add_data(self, data):
+        data = categorical_data_class(data)
+        data.set_index(self.cols); data.set_name(self.cols)
+        self.data.append(data)
+        self.update_size()
 
-    def update_dimensions(self):
+    def update_size(self):
         self.cols = len(self.data)
         self.rows = self.col(0).rows if self.cols > 0 else 0
         self.Rows = list(range(self.rows))
@@ -58,7 +64,7 @@ class matrix_class():
         
     def correct_rows(self, rows):
         return correct_range(rows, self.rows) if is_list(rows) or rows is None else index_to_range(rows, self.rows)
-
+    
 
     
     def col(self, col):
@@ -69,19 +75,16 @@ class matrix_class():
         return self.col(col).name
     
     def names(self, cols = None, index = False):
+        cols = self.correct_cols(cols)
         names = ['i'] if index else []
-        return names + [self.name(col) for col in self.get_cols_indexes(cols)]
-
-    def print_cols(self):
-        table = transpose([self.Cols, self.names(), self.types()])
-        table = tabulate(table, headers = ['i', 'column', 'type'])
-        print(table)
+        return names + [self.name(col) for col in cols]
 
     def type(self, col):
         return self.col(col).type
 
     def types(self, cols = None):
-        return [self.col(col).type for col in self.get_cols_indexes(cols)]
+        cols = self.correct_cols(cols)
+        return [self.col(col).type for col in cols]
 
 
     def transpose(self):
@@ -117,6 +120,9 @@ class matrix_class():
     def categorical_cols(self):
         return [self.name(col) for col in self.Cols if self.is_categorical(col)]
 
+    def non_categorical_cols(self):
+        return [self.name(col) for col in self.Cols if not self.is_categorical(col)]
+
 
     def strip_col(self, col):
         self.col(col).strip()
@@ -142,29 +148,6 @@ class matrix_class():
         
     def to_datetime(self, col, form, delta_form):
         self.set_col(col, self.col(col).to_datetime(form, delta_form))
-
-
-        
-    def copy(self):
-        return copy(self)
-
-    def subset(self, rows = None):
-        rows = self.correct_rows(rows)
-        rows = correct_range(rows, self.rows) if is_list(rows) else index_to_range(rows, self.rows)
-        new = matrix_class()
-        data = [data.subset(rows) for data in self.data]
-        new.set_data(data)
-        #new.set_names(self.names())
-        return new
-        
-    def part(self, start = None, end = None):
-        start = correct_left_index(start, self.rows)
-        end = correct_right_index(end, self.rows)
-        return self.subset(range(start, end))
-
-    def where(self, value, col):
-        return self.subset(self.col(col).where(value))
-
     
 
     def unique(self, col, nan = True):
@@ -181,15 +164,13 @@ class matrix_class():
         return self.col(col).counts(norm)
 
     def numerical_info(self):
-        cols = ['i', 'col', 'mean', 'median', 'mode', 'std', 'span', 'density', 'nan']
-        info = [[self.get_col_index(col)] + self.col(col).info() for col in self.numerical_cols()]
-        table = tabulate(info, headers = cols, decimals = 1)
-        print(table + nl)
-
-    def datetime_info(self, form = 'days'):
-        cols = ['i', 'col', 'mean', 'median', 'mode', 'std', 'span', 'density', 'nan']
-        info = [[self.get_col_index(col)] + self.col(col).info(string = True) for col in self.datetime_cols()]
-        table = tabulate(info, headers = cols, decimals = 1)
+        cols = self.non_categorical_cols()
+        col0 = cols[0]
+        header = list(self.col(col0).numerical_info(string = 1).keys())
+        table = [list(self.col(col).numerical_info(string = 1).values()) for col in cols]
+        table = [header] + table
+        #table = transpose([header]) + transpose(table)
+        table = tabulate(transpose(table))#, header = header)
         print(table + nl)
 
     def categorical_info(self, norm = 0, cols = None, length = 10):
@@ -208,7 +189,7 @@ class matrix_class():
         unique2 = [c2.to_string(el) for el in unique2]
         table = [[unique1[i]] + counts[i][:length] for i in range(len(counts))]
         header = [c1.name + ' / ' + c2.name] + unique2[:length]
-        table = tabulate(table, headers = header, decimals = 1)
+        table = tabulate(table, header = header, decimals = 1)
         print(table) if log else None
         print(' Cramers:', round(100 * corr, 1) if corr != n else n, '%' + nl) if log else None
         return corr
@@ -220,33 +201,23 @@ class matrix_class():
         sub_data = [self.where(u1, col1).col(col2) for u1 in unique1]
         table = [[data.mean(), data.std(), data.rows] for data in sub_data]
         std = mean([data[1] for data in table if data[1] != n])
-        corr = 1 - std / c2.std()
+        std_old = c2.std()
+        corr = (std - std_old) / std_old
         table = [[c2.to_string(el) for el in data] for data in table]
         unique1 = [c1.to_string(el) for el in unique1]
         unique2 = [c2.to_string(el) for el in unique2]
         table = [[unique1[i]] + table[i] for i in range(len(table))]
         header = [c1.name + ' / ' + c2.name, 'mean', 'std', 'len']
-        table = tabulate(table, headers = header, decimals = 1)
+        table = tabulate(table, header = header, decimals = 1)
         print(table) if log else None
-        print('Correlation:', round(100 * corr, 1), '%' + nl) if log else None
+        print(' STD change from', round(std, 1), 'is', round(100 * corr, 1), '%' + nl) if log else None
         return corr
 
-    def crossplot(self, col1, col2):
-        c1, c2 = self.col(col1), self.col(col2)
-        x, y = c1.get(), c2.get()
-        x, y = transpose([el for el in transpose([x, y]) if n not in el]) if c1.is_datetime() or c2.is_datetime() else (x, y)
-        plt.figure(0, figsize = (15, 8))
-        plt.clf()
-        plt.scatter(x, y)
-        plt.xlabel(c1.name); plt.ylabel(c2.name)
-        plt.xticks(rotation = 90) if not c1.is_numerical() else None
-        #plt.yticks(rotation = 90, ha = 'right') if not c2.is_numerical() else None
-        plt.tight_layout(); plt.pause(0.1); plt.show(block = 1); plt.clf(); plt.close()
 
     def plot(self, col, bins = 100):
         c = self.col(col)
         is_num = c.is_numerical() or c.is_datetime()
-        data = c.get(nan = True) if is_num else c.get(nan = False)
+        data = c.get(nan = False) if is_num else c.get(nan = False)
         plt.figure(0, figsize = (15, 8))
         plt.clf()
         plt.hist(data, bins = min(bins, len(c.unique()))) if is_num else None
@@ -257,16 +228,51 @@ class matrix_class():
         #plt.yticks(rotation = 90, ha = 'right') if not c2.is_numerical() else None
         plt.tight_layout(); plt.pause(0.1); plt.show(block = 1); plt.clf(); plt.close()
         
-        
+    def crossplot(self, col1, col2):
+        c1, c2 = self.col(col1), self.col(col2)
+        x, y = c1.get(nan = True), c2.get(nan = True)
+        x, y = transpose([el for el in transpose([x, y]) if n not in el]) 
+        plt.figure(0, figsize = (15, 8))
+        plt.clf()
+        plt.scatter(x, y)
+        plt.xlabel(c1.name); plt.ylabel(c2.name)
+        plt.xticks(rotation = 90) if not c1.is_numerical() else None
+        #plt.yticks(rotation = 90, ha = 'right') if not c2.is_numerical() else None
+        plt.tight_layout(); plt.pause(0.1); plt.show(block = 1); plt.clf(); plt.close()
+
 
         
-    def correct_cols(self, cols):
-        return self.get_cols_indexes(cols) if is_list(cols) or cols is None else index_to_range(self.get_col_index(cols), self.cols)
-        
-    def correct_rows(self, rows):
-        return correct_range(rows, self.rows) if is_list(rows) or rows is None else index_to_range(rows, self.rows)
+    def tabulate_data(self, header = True, index = False, rows = None, cols = None, decimals = 1):
+        header = self.names(cols, index) if header else None
+        return tabulate(self.section(rows, cols, index, 1), header = header, decimals = decimals)
+
+    def tabulate_types(self, cols = None):
+        return tabulate(transpose([self.names(cols), self.get_cols_indexes(cols), self.types(cols)]), header = ['name', 'id', 'type'])
+
+    def tabulate_dimensions(self):
+        return tabulate([[self.rows, self.cols]], header = ['rows', 'cols'])
+
+    def tabulate_info(self, cols = None):
+        return self.tabulate_dimensions() + 2 * nl + self.tabulate_types(cols)
+
+    def print_cols(self):
+        table = transpose([self.Cols, self.names(), self.types()])
+        table = tabulate(table, header = ['i', 'column', 'type'])
+        print(table)
+
+    def print(self, header = True, index = False, rows = 40, cols = None, decimals = 1):
+        print(self.tabulate_data(header, index, rows, cols, decimals))
+        #print(nl + self.tabulate_()) if info else None
+
+    def __repr__(self):
+        rows, cols = 10, 3
+        rows = list(range(rows)) + list(range(-rows, 0))
+        #cols = list(range(cols)) + list(range(-cols, 0))
+        #return self.tabulate_i(1, 1, 0, rows)
+        return self.tabulate_info()
 
 
+    
     def copy(self):
         return copy(self)
 
@@ -274,9 +280,8 @@ class matrix_class():
         rows = self.correct_rows(rows)
         rows = correct_range(rows, self.rows) if is_list(rows) else index_to_range(rows, self.rows)
         new = matrix_class()
-        data = [data.subset(rows) for data in self.data]
-        new.set_data(data)
-        #new.set_names(self.get_names())
+        new.data = [data.subset(rows) for data in self.data]
+        new.update_size()
         return new
         
     def part(self, start = None, end = None):
@@ -286,29 +291,3 @@ class matrix_class():
 
     def where(self, value, col):
         return self.subset(self.col(col).where(value))
-
-
-    def tabulate_data(self, header = True, index = False, rows = None, cols = None, decimals = 1):
-        headers = self.names(cols, index) if header else None
-        footers = self.types(cols) if header else None
-        return tabulate(self.section(rows, cols, index, 1) + [self.get_cols_indexes()], headers = headers, footers = footers, decimals = decimals)
-
-    def tabulate_types(self, cols = None):
-        return tabulate(transpose([self.names(cols), self.get_cols_indexes(cols), self.types(cols)]), headers = ['name', 'id', 'type'])
-
-    def tabulate_dimensions(self):
-        return tabulate([[self.rows, self.cols]], headers = ['rows', 'cols'])
-
-    def tabulate_info(self, cols = None):
-        return self.tabulate_dimensions() + 2 * nl + self.tabulate_types(cols)
-
-    def print(self, header = True, index = False, info = True, rows = None, cols = None, decimals = 1):
-        print(self.tabulate_data(header, index, rows, cols, decimals))
-        print(nl + self.tabulate_dimensions()) if info else None
-
-    def __repr__(self):
-        rows, cols = 10, 3
-        rows = list(range(rows)) + list(range(-rows, 0))
-        #cols = list(range(cols)) + list(range(-cols, 0))
-        #return self.tabulate_i(1, 1, 0, rows)
-        return self.tabulate_info()

@@ -107,9 +107,9 @@ to_string = lambda el, d: el if isinstance(el, str) else str(round(el, d)) if is
 vline = '│'
 delimiter = sp * 2 + vline + sp * 2
 
-def tabulate(data, headers = None, footers = None, decimals = 1):
-    data = [headers] + data if headers is not None else data
-    data = data + [footers] if footers is not None else data
+def tabulate(data, header = None, footer = None, decimals = 1):
+    data = [header] + data if header is not None else data
+    data = data + [footer] if footer is not None else data
     data = [[to_string(el, decimals) for el in line] for line in data]
     t = transpose(data)
     cols = len(t); rows = len(data)
@@ -120,8 +120,8 @@ def tabulate(data, headers = None, footers = None, decimals = 1):
     t = [[pad(el, ls[i]) for el in t[i]] for i in Cols]
     d = transpose(t)
     lines = [''.join(line) for line in d]
-    lines[0] = plx.colorize(lines[0], style = 'bold') if headers is not None else lines[0]
-    lines[-1] = plx.colorize(lines[-1], style = 'bold') if footers is not None else lines[-1]
+    lines[0] = plx.colorize(lines[0], style = 'bold') if header is not None else lines[0]
+    lines[-1] = plx.colorize(lines[-1], style = 'bold') if footer is not None else lines[-1]
     out = nl.join(lines)
     return out
 
