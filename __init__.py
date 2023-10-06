@@ -1,3 +1,3 @@
-from matrix import *
-from data import *
-from methods import *
+from bongo.matrix import *
+from bongo.data import *
+from bongo.methods import *

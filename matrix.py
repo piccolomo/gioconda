@@ -103,7 +103,10 @@ class matrix_class():
 
     def is_categorical(self, col):
         return self.col(col).is_categorical()
-    
+
+    def is_not_categorical(self, col):
+        return self.col(col).is_not_categorical()
+
     def is_numerical(self, col):
         return self.col(col).is_numerical()
     
@@ -177,13 +180,23 @@ class matrix_class():
         cols = self.correct_cols(cols)
         [self.col(col).print_counts(norm = norm, length = length) for col in cols if self.is_categorical(col)]
 
+    def tab(self, col1, col2, log = True, length = 5):
+        c1, c2 = self.col(col1), self.col(col2)
+        if c1.is_not_categorical() and c2.is_not_categorical():
+            print('Warning: At least one column should be categorical')
+        elif c1.is_categorical() and c2.is_categorical():
+            return self.categorical_tab(col1, col2, log = log, length = length)
+        elif c1.is_categorical() and c2.is_not_categorical():
+            return self.mixed_categorical_tab(col1, col2, log = log)
+        else:# c1.is_not_categorical() and c2.is_categorical():
+            return self.mixed_categorical_tab(col2, col1, log = log)
 
         
-    def tab(self, col1, col2, log = True, length = 5):
+    def categorical_tab(self, col1, col2, log = True, length = 5):
         c1, c2 = self.col(col1), self.col(col2)
         unique1 = c1.cross_unique(c2)
         unique2 = c2.cross_unique(c1)
-        counts = [[self.where(u1, col1).count(u2, col2, norm = False) for u2 in unique2] for u1 in unique1]
+        counts = [[self.equal(u1, col1).count(u2, col2, norm = False) for u2 in unique2] for u1 in unique1]
         corr = cramers(counts)
         unique1 = [c1.to_string(el) for el in unique1]
         unique2 = [c2.to_string(el) for el in unique2]
@@ -194,11 +207,11 @@ class matrix_class():
         print(' Cramers:', round(100 * corr, 1) if corr != n else n, '%' + nl) if log else None
         return corr
 
-    def crosstab(self, col1, col2, log = True):
+    def mixed_categorical_tab(self, col1, col2, log = True):
         c1, c2 = self.col(col1), self.col(col2)
         unique1 = c1.cross_unique(c2)
         unique2 = c2.cross_unique(c1)
-        sub_data = [self.where(u1, col1).col(col2) for u1 in unique1]
+        sub_data = [self.equal(u1, col1).col(col2) for u1 in unique1]
         table = [[data.mean(), data.std(), data.rows] for data in sub_data]
         std = mean([data[1] for data in table if data[1] != n])
         std_old = c2.std()
@@ -210,7 +223,7 @@ class matrix_class():
         header = [c1.name + ' / ' + c2.name, 'mean', 'std', 'len']
         table = tabulate(table, header = header, decimals = 1)
         print(table) if log else None
-        print(' STD change from', round(std, 1), 'is', round(100 * corr, 1), '%' + nl) if log else None
+        print(' STD change from', c2.to_string(std), 'is', round(100 * corr, 1), '%' + nl) if log else None
         return corr
 
 
@@ -247,7 +260,9 @@ class matrix_class():
         return tabulate(self.section(rows, cols, index, 1), header = header, decimals = decimals)
 
     def tabulate_types(self, cols = None):
-        return tabulate(transpose([self.names(cols), self.get_cols_indexes(cols), self.types(cols)]), header = ['name', 'id', 'type'])
+        table = transpose([self.Cols, self.names(), self.types()])
+        return tabulate(table, header = ['i', 'column', 'type'])
+        #return tabulate(transpose([self.names(cols), self.get_cols_indexes(cols), self.types(cols)]), header = ['name', 'id', 'type'])
 
     def tabulate_dimensions(self):
         return tabulate([[self.rows, self.cols]], header = ['rows', 'cols'])
@@ -255,14 +270,10 @@ class matrix_class():
     def tabulate_info(self, cols = None):
         return self.tabulate_dimensions() + 2 * nl + self.tabulate_types(cols)
 
-    def print_cols(self):
-        table = transpose([self.Cols, self.names(), self.types()])
-        table = tabulate(table, header = ['i', 'column', 'type'])
-        print(table)
-
-    def print(self, header = True, index = False, rows = 40, cols = None, decimals = 1):
+    def print(self, header = True, index = False, rows = None, cols = None, decimals = 1):
+        rows = plx.th() - 7 if rows is None else rows
         print(self.tabulate_data(header, index, rows, cols, decimals))
-        #print(nl + self.tabulate_()) if info else None
+        print(nl + self.tabulate_dimensions())
 
     def __repr__(self):
         rows, cols = 10, 3
@@ -270,7 +281,6 @@ class matrix_class():
         #cols = list(range(cols)) + list(range(-cols, 0))
         #return self.tabulate_i(1, 1, 0, rows)
         return self.tabulate_info()
-
 
     
     def copy(self):
@@ -289,5 +299,14 @@ class matrix_class():
         end = correct_right_index(end, self.rows)
         return self.subset(range(start, end))
 
-    def where(self, value, col):
-        return self.subset(self.col(col).where(value))
+    def equal(self, value, col):
+        return self.subset(self.col(col).equal(value))
+
+    def not_equal(self, value, col):
+        return self.subset(self.col(col).not_equal(value))
+    
+    def greater(self, value, col, equal = True):
+        return self.subset(self.col(col).greater(value, equal))
+
+    def lower(self, value, col, equal = True):
+        return self.subset(self.col(col).lower(value, equal))

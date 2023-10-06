@@ -105,7 +105,7 @@ footers = ['c1', 'c2', 'c3', 'd1', 'd2', 'n1', 'n2']
 
 to_string = lambda el, d: el if isinstance(el, str) else str(round(el, d)) if isinstance(el, float) else str(el)
 vline = '│'
-delimiter = sp * 2 + vline + sp * 2
+delimiter = sp * 2 + 1 * vline + sp * 0
 
 def tabulate(data, header = None, footer = None, decimals = 1):
     data = [header] + data if header is not None else data

@@ -54,10 +54,13 @@ class data_class():
     
     def is_categorical(self):
         return self.type == 'categorical'
+
+    def is_not_categorical(self):
+        return not self.is_categorical()
     
 
     def count(self, n, norm = False):
-        c = len(self.where(n))
+        c = len(self.equal(n))
         return 100 * c / self.rows if norm and self.rows != 0 else c
 
     def nan(self, norm = False):
@@ -89,13 +92,17 @@ class data_class():
         return unique(self.get(nan = nan))
 
 
-    def where(self, value):
-        rows = [i for i in self.Rows if self.data[i] == value]
-        return rows
+    def equal(self, value):
+        transform = lambda el: self.to_string(el) if isinstance(value, str) else el
+        return [i for i in self.Rows if transform(self.data[i]) == value]
+
+    def not_equal(self, value):
+        return [i for i in self.Rows if i not in self.equal(value)]
+    
 
     def select(self, value, data):
         new = data.empty()
-        rows = self.where(value)
+        rows = self.equal(value)
         new.set_data(data.get(rows))
         return new
 
@@ -239,6 +246,14 @@ class numerical_data_class(data_class):
 
     def to_string(self, el):
         return el if isinstance(el, str) else str(round(el, 1))
+
+    
+    def greater(self, value, equal = True):
+        transform = lambda el: self.to_string(el) if isinstance(value, str) else el
+        return [i for i in self.Rows if transform(self.data[i]) >= value]
+    
+    def lower(self, value, equal = True):
+        return [i for i in self.Rows if i not in self.greater(value, not equal)]
     
 
 
