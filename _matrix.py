@@ -234,7 +234,7 @@ class matrix_class():
         plt.figure(0, figsize = (15, 8))
         plt.clf()
         plt.hist(data, bins = min(bins, len(c.unique()))) if is_num else None
-        plt.bar(*transpose(self.col('type').counts())) if not is_num else None
+        plt.bar(*transpose(self.col(col).counts())) if not is_num else None
         #plt.bar(data)
         plt.xlabel(c.name); plt.ylabel('count')
         plt.xticks(rotation = 90) if not is_num else None

@@ -78,10 +78,6 @@ def read_pickle(path):
 #     print("csv read!\n")
 #     return data
     
-
-
-
-
 # class memorize: # it memorise the arguments of a function, when used as its decorator, to reduce computational time
 #     def __init__(self, f):
 #         self.f = f
