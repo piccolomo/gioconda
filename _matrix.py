@@ -260,9 +260,13 @@ class matrix_class():
         return tabulate(self.section(rows, cols, index, 1), header = header, decimals = decimals)
 
     def tabulate_types(self, cols = None):
-        table = transpose([self.Cols, self.names(), self.types()])
+        cols = self.Cols if cols is None else cols
+        table = transpose([self.get_cols_indexes(cols), self.names(cols), self.types(cols)])
         return tabulate(table, header = ['i', 'column', 'type'])
         #return tabulate(transpose([self.names(cols), self.get_cols_indexes(cols), self.types(cols)]), header = ['name', 'id', 'type'])
+
+    def print_types(self, cols = None):
+        print(self.tabulate_types(cols))
 
     def tabulate_dimensions(self):
         return tabulate([[self.rows, self.cols]], header = ['rows', 'cols'])

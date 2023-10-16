@@ -237,10 +237,10 @@ class numerical_data_class(data_class):
         return mode(data) if r > 0 else n
 
     def numerical_info(self, string = False):
-        return {'name': self.name, 'mean': self.mean(), 'std': self.std(), 'density': self.density(), 'median': self.median(), 'mode': self.mode(), 'min': self.min(), 'max': self.max(), 'span': self.span(), 'nan': self.nan(1)}
+        return {'name': self.name, 'min': self.min(), 'max': self.max(), 'span': self.span(), 'nan': self.nan(1), 'mean': self.mean(), 'median': self.median(), 'mode': self.mode(), 'std': self.std(), 'density': self.density()}
 
     def info(self, string = False):
-        info = super().info()
+        info = super().basic_info()
         info.update(self.numerical_info(string = string))
         return info
 
