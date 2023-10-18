@@ -9,7 +9,7 @@ class matrix_class():
         self.set_matrix(matrix)
 
     def create_data(self):
-        self.data = []
+        self.data = np.array([])
         self.update_size()
 
     def set_matrix(self, matrix = None):
@@ -20,14 +20,14 @@ class matrix_class():
     def add_data(self, data):
         data = categorical_data_class(data)
         data.set_index(self.cols); data.set_name(self.cols)
-        self.data.append(data)
+        np.append(self.data, data)
         self.update_size()
 
     def update_size(self):
         self.cols = len(self.data)
         self.rows = self.col(0).rows if self.cols > 0 else 0
-        self.Rows = list(range(self.rows))
-        self.Cols = list(range(self.cols))
+        self.Rows = np.arange(self.rows)
+        self.Cols = np.arange(self.cols)
 
         
     def set(self, row, col, el):
@@ -56,7 +56,7 @@ class matrix_class():
         return self.names().index(col) if isinstance(col, str) else col
 
     def get_cols_indexes(self, cols = None):
-        cols = self.Cols if cols is None else list(map(self.get_col_index, cols))
+        cols = self.Cols if cols is None else np.vectorize(self.get_col_index)(cols)
         return correct_range(cols, self.cols)
 
     def correct_cols(self, cols):
@@ -88,7 +88,7 @@ class matrix_class():
 
 
     def transpose(self):
-        return transpose(self.get_section())
+        return np.transpose(self.get_section())
 
     def get(self, col, rows = None, nan = True, string = False):
         return self.col(col).get(rows, nan = nan, string = string)
@@ -96,8 +96,8 @@ class matrix_class():
     def section(self, rows = None, cols = None, index = False, string = False):
         rows = self.correct_rows(rows)
         cols = self.correct_cols(cols)
-        data = transpose([self.get(col, rows, string = string if self.is_datetime(col) else 0) for col in cols])
-        data = [[rows[i]] + data[i] for i in range(len(rows))] if index else data
+        data = np.transpose([self.get(col, rows, string = string) for col in cols])
+        data = [d[i].insert(rows[i], 0) for i in range(len(rows))] if index else data
         return data
 
 
@@ -173,7 +173,7 @@ class matrix_class():
         table = [list(self.col(col).numerical_info(string = 1).values()) for col in cols]
         table = [header] + table
         #table = transpose([header]) + transpose(table)
-        table = tabulate(transpose(table))#, header = header)
+        table = tabulate(np.transpose(table))#, header = header)
         print(table + nl)
 
     def categorical_info(self, norm = 0, cols = None, length = 10):

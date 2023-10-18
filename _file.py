@@ -40,10 +40,10 @@ def read_data(file_name, delimiter = ',', header = False, log = True):
 
 data = read_data(test_data_path, header = True, log = False)
 
-data.to_datetime('d1', '%Y-%m-%d', 'years')
-data.to_datetime('d2', '%Y-%m-%d', 'years')
-data.to_float('n1')
-data.to_float('n2')
+# data.to_datetime('d1', '%Y-%m-%d', 'years')
+# data.to_datetime('d2', '%Y-%m-%d', 'years')
+# data.to_float('n1')
+# data.to_float('n2')
 
 
 def get_pickle_path(name):
