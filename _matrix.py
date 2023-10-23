@@ -232,9 +232,9 @@ class matrix_class():
         end = self.rows if end is None else min(end, self.rows)
         return self.subset(np.arange(start, end))
 
+    def copy(self):
+        return copy(self)
 
-
-    
     # def numerical_cols(self):
     #     return [self.name(col) for col in self.Cols if self.is_numerical(col)]
     
@@ -243,28 +243,6 @@ class matrix_class():
 
     # def non_categorical_cols(self):
     #     return [self.name(col) for col in self.Cols if not self.is_categorical(col)]
-    
-
-
-
-
-
-
-
-
-    
-
-
-        
-
-
-    
-    def copy(self):
-        return copy(self)
-    
-
-
-        
         
     # def set_col_names(self, names):
     #     [self.data[col].set_name(names[col]) for col in self.Cols]
