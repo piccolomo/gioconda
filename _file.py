@@ -1,7 +1,7 @@
 import pickle
 import plotext as plx
 from bongo._matrix import matrix_class
-from bongo._methods import nl
+from bongo._data import nl
 import os
 
 # File Utilities
@@ -31,19 +31,20 @@ def read_data(file_name, delimiter = ',', header = False, log = True):
     lines = read_lines(file_name, log = log)
     print('loading data') if log else None
     matrix = split_lines(lines, delimiter)
-    table = matrix[1:] if header else matrix
     data = matrix_class()
-    data.set_matrix(table)
-    data.set_names(matrix[0]) if header else None
+    data.add_matrix(matrix, header)
     print('data loaded!\n') if log else None
     return data
 
 data = read_data(test_data_path, header = True, log = False)
 
-# data.to_datetime('d1', '%Y-%m-%d', 'years')
-# data.to_datetime('d2', '%Y-%m-%d', 'years')
-# data.to_float('n1')
-# data.to_float('n2')
+data.to_datetime('d1', '%Y-%m-%d', 'years')
+data.to_datetime('d2', '%Y-%m-%d', 'years')
+data.to_numerical('n1')
+data.to_numerical('n2')
+data.to_categorical('c1')
+data.to_categorical('c2')
+data.to_categorical('c3')
 
 
 def get_pickle_path(name):
