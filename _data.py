@@ -16,13 +16,13 @@ class data_class():
         self.set_forms()
 
     def set_data(self, data = []):
-        self.data = np.array(data, dtype = object)
+        self.data = np.array(data)
         self.update_length()
 
     def set_name(self, name = 'none'):
         self.name = name
 
-    def set_type(self, type = 'mixed'):
+    def set_type(self, type = 'categorical'):
         self.type = type
 
     def set_index(self, index = 'none'):
@@ -65,11 +65,13 @@ class data_class():
     def count(self, value, norm = False):
         counts = self.counts(norm)
         return counts[value] if value in counts else 0
+        #return 100 * count / self.rows if norm else count
     
     def count_nan(self, norm = False):
         c = np.count_nonzero(are_nan(self.data))
         return nan if self.rows == 0 else 100 * c / self.rows if norm else c
 
+    @mem(maxsize=None)
     def unique(self, nan = True):
         return np.array(list(self.counts().keys()), dtype = self.data.dtype)
 
@@ -187,7 +189,7 @@ class data_class():
 
     def tabulate_counts(self, norm = False, length = 10):
         header = [self.name, 'count']
-        counts = list(self.counts(norm = norm).items())
+        counts = list(self.counts(norm = norm).items())[: length]
         table = tabulate(counts, header = header) + nl
         return table
 
@@ -214,7 +216,7 @@ class data_class():
         plt.hist(self.get_section(nan = False), bins = bins) if self.is_countable() else None
         plt.bar(self.counts().keys(), self.counts().values()) if self.is_uncountable() else None
         plt.xlabel(self.name); plt.ylabel('count')
-        plt.xticks(rotation = 90) if self.is_countable() else None
+        plt.xticks(rotation = 90) if self.is_categorical() else None
         plt.tight_layout(); plt.pause(0.1); plt.show(block = 1); plt.clf(); plt.close()
     
     
@@ -334,11 +336,11 @@ vline = '│'
 nl = '\n'
 delimiter = sp * 2 + 1 * vline + sp * 0
 
-def tabulate(data, header = None, footer = None, decimals = 1):
+def tabulate(data, header = None, decimals = 1):
     cols = len(data[0]); rows = len(data); Cols = range(cols)
-    data = np.concatenate([[header], data], axis = 0) if header is not None else data
     to_string = lambda el: str(round(el, decimals)) if is_number(el) else str(el)
     data = np.vectorize(to_string)(data)
+    data = np.concatenate([[header], data], axis = 0) if header is not None else data
     dataT = np.transpose(data)
     prepend_delimiter = lambda el: delimiter + el
     dataT = [np.vectorize(prepend_delimiter)(dataT[i]) if i != 0 else dataT[i] for i in Cols]
@@ -348,7 +350,6 @@ def tabulate(data, header = None, footer = None, decimals = 1):
     data = transpose(dataT)
     lines = [''.join(line) for line in data]
     lines[0] = plx.colorize(lines[0], style = 'bold') if header is not None else lines[0]
-    lines[-1] = plx.colorize(lines[-1], style = 'bold') if footer is not None else lines[-1]
     out = nl.join(lines)
     return out
 

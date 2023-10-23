@@ -26,8 +26,11 @@ class matrix_class():
         cols = len(matrix[0])
         names = matrix[0] if header else [None] * cols
         matrix = matrix[1:] if header else matrix
-        data = transpose(matrix)
+        data = np.transpose(matrix)
         [self.add_data(data[i], names[i]) for i in range(cols)]
+
+    def set_names(self, names):
+        [self.col(col).set_name(names[col]) for col in self.Cols]
         
 
     def col(self, col):
@@ -70,13 +73,19 @@ class matrix_class():
 
 
     def count(self, col, el, norm = False):
-        return self.col(col).count(el, norm)
+        return self.col(col).count(el, norm = norm)
     
     def counts(self, col, norm = False):
         return self.col(col).counts(norm)
 
     def unique(self, col, nan = True):
         return self.col(col).unique(nan)
+
+    def cross_count(self, col1, col2, val1, val2, norm = False):
+        # return self.equal(col1, val1).count(col2, val2, norm = norm)
+        rows1 = self.col(col1).equal(val1)
+        count = np.count_nonzero(rows1 & self.col(col2).equal(val2))
+        return 100 * count / np.count_nonzero(rows1) if norm else count
 
 
     def to_numerical(self, col):
@@ -113,11 +122,13 @@ class matrix_class():
         return [self.name(col) for col in self.Cols if self.is_countable(col)]
 
 
-    def strip(self, col):
-        self.col(col).strip()
+    def strip(self, cols = None):
+        cols = self.correct_cols(cols)
+        [self.col(col).strip() for col in cols]
 
-    def replace(self, col, old, new):
-        self.col(col).replace(old, new)
+    def replace(self, old, new, cols = None):
+        cols = self.correct_cols(cols)
+        [self.col(col).replace(old, new) for col in cols]
 
 
     def numerical_info(self):
@@ -130,45 +141,46 @@ class matrix_class():
         table = tabulate(transpose(table), header = header)
         print(table + nl)
 
-    def categorical_info(self, norm = 0, cols = None, length = 10):
-        cols = self.categorical_cols()
+    def categorical_info(self, norm = False, cols = None, length = 10):
+        cols = self.correct_cols(cols)
+        cols = [col for col in cols if self.is_categorical(col)]
         [self.col(col).print_counts(norm = norm, length = length) for col in cols]
 
-    def categorical_cross_counts(self, col1, col2, norm = False):
-        unique1 = list(self.unique(col1)); unique2 = list(self.unique(col2))
-        counts = [[self.equal(col1, u1).count(col2, u2, norm = norm) for u2 in unique2] for u1 in unique1]
+    def categorical_cross_counts(self, col1, col2, norm = False, length = 10):
+        unique1 = list(self.unique(col1))[:length]; unique2 = list(self.unique(col2))[:length]
+        counts = [[self.cross_count(col1, col2, u1, u2, norm = norm) for u2 in unique2] for u1 in unique1]
         table = [[unique1[i]] + counts[i] for i in range(len(counts))]
         header = [self.name(col1) + ' / ' + self.name(col2)] + unique2
         table = tabulate(table, header = header, decimals = 1)
         print(table)
 
-    def mixed_cross_counts(self, col1, col2):
-        unique1 = list(self.unique(col1)); unique2 = list(self.unique(col2))
+    def mixed_cross_counts(self, col1, col2, length = 10):
+        unique1 = list(self.unique(col1))[:length]; unique2 = list(self.unique(col2))[:length]
         data1 = [self.equal(col1, u1).col(col2) for u1 in unique1]
-        table = [[data.mean(), data.std(), data.rows] for data in data1]
+        table = [[data.to_string(data.mean()), data.to_string(data.std()), data.rows] for data in data1]
         table = [[unique1[i]] + table[i] for i in range(len(table))]
         header = [self.name(col1) + ' / ' + self.name(col2), 'mean', 'std', 'len']
         table = tabulate(table, header = header, decimals = 1)
         print(table)
 
-    def tab(self, col1, col2, norm = False):
+    def tab(self, col1, col2, norm = False, length = 10):
         if self.is_non_categorical(col1) and self.is_non_categorical(col2):
             print('Warning: At least one column should be categorical')
         elif self.is_categorical(col1) and self.is_categorical(col2):
-            return self.categorical_cross_counts(col1, col2, norm = False)
+            return self.categorical_cross_counts(col1, col2, norm = norm, length = length)
         elif self.is_categorical(col1) and self.is_non_categorical(col2):
-            return self.mixed_cross_counts(col1, col2)
+            return self.mixed_cross_counts(col1, col2, length = length)
         else:
-            return self.mixed_cross_counts(col2, col1)
+            return self.mixed_cross_counts(col2, col1, length = length)
         
     def plot(self, col, bins = 100):
         self.col(col).plot(bins)
 
     def cross_plot(self, col1, col2):
         plt.figure(0, figsize = (15, 8)); plt.clf()
-        plt.scatter(self.col(col1).get_section(nan = True), self.get(col2).get_section(nan = True))
+        plt.scatter(self.col(col1).get_section(nan = True), self.col(col2).get_section(nan = True))
         plt.xlabel(self.name(col1)); plt.ylabel(self.name(col2))
-        plt.xticks(rotation = 90) if self.is_numerical(col1) else None
+        plt.xticks(rotation = 90) if self.is_categorical(col1) else None
         plt.tight_layout(); plt.pause(0.1); plt.show(block = 1); plt.clf(); plt.close()
 
 
