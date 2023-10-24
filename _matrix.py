@@ -100,8 +100,8 @@ class matrix_class():
     def is_categorical(self, col):
         return self.col(col).is_categorical()
 
-    def is_non_categorical(self, col):
-        return self.col(col).is_non_categorical()
+    def is_not_categorical(self, col):
+        return self.col(col).is_not_categorical()
 
     def is_numerical(self, col):
         return self.col(col).is_numerical()
@@ -146,32 +146,40 @@ class matrix_class():
         cols = [col for col in cols if self.is_categorical(col)]
         [self.col(col).print_counts(norm = norm, length = length) for col in cols]
 
-    def categorical_cross_counts(self, col1, col2, norm = False, length = 10):
+    def categorical_tab(self, col1, col2, length = 10, norm = False):
         unique1 = list(self.unique(col1))[:length]; unique2 = list(self.unique(col2))[:length]
         counts = [[self.cross_count(col1, col2, u1, u2, norm = norm) for u2 in unique2] for u1 in unique1]
         table = [[unique1[i]] + counts[i] for i in range(len(counts))]
-        header = [self.name(col1) + ' / ' + self.name(col2)] + unique2
+        header = [''] + unique2
         table = tabulate(table, header = header, decimals = 1)
+        title = self.name(col1) + ' / ' + self.name(col2)
+        print(plx.colorize(title, style = "bold"))
         print(table)
 
-    def mixed_cross_counts(self, col1, col2, length = 10):
+    def mixed_tab(self, col1, col2, length = 10, norm = True):
         unique1 = list(self.unique(col1))[:length]; unique2 = list(self.unique(col2))[:length]
-        data1 = [self.equal(col1, u1).col(col2) for u1 in unique1]
-        table = [[data.to_string(data.mean()), data.to_string(data.std()), data.rows] for data in data1]
+        data2 = [self.equal(col1, u1).col(col2) for u1 in unique1]
+        table = [[data.mean(1), data.std(1), 100 * data.rows / self.rows if norm else data.rows] for data in data2]
         table = [[unique1[i]] + table[i] for i in range(len(table))]
-        header = [self.name(col1) + ' / ' + self.name(col2), 'mean', 'std', 'len']
+        header = ['', 'mean', 'std', 'len (%)']
+        title = self.name(col1) + ' / ' + self.name(col2)
+        print(plx.colorize(title, style = "bold"))
         table = tabulate(table, header = header, decimals = 1)
         print(table)
 
-    def tab(self, col1, col2, norm = False, length = 10):
-        if self.is_non_categorical(col1) and self.is_non_categorical(col2):
-            print('Warning: At least one column should be categorical')
-        elif self.is_categorical(col1) and self.is_categorical(col2):
-            return self.categorical_cross_counts(col1, col2, norm = norm, length = length)
-        elif self.is_categorical(col1) and self.is_non_categorical(col2):
-            return self.mixed_cross_counts(col1, col2, length = length)
-        else:
-            return self.mixed_cross_counts(col2, col1, length = length)
+    def numerical_tab(self, col1, col2, length = 10, norm = True):
+        digitized1 = self.digitize(col1, length)
+        data1 = [data.col(col1) for data in digitized1]
+        data2 = [data.col(col2) for data in digitized1]
+        mean1 = [data.mean(1) for data in data1]
+        table = [[data.mean(1), data.std(1), 100 * data.rows / self.rows if norm else data.rows] for data in data2]
+        table = [[mean1[i]] + table[i] for i in range(len(table))]
+        header = ['', 'mean', 'std', 'len (%)']
+        table = tabulate(table, header = header, decimals = 1)
+        title = self.name(col1) + ' / ' + self.name(col2)
+        print(plx.colorize(title, style = "bold"))
+        print(table)
+
         
     def plot(self, col, bins = 100):
         self.col(col).plot(bins)
@@ -220,6 +228,13 @@ class matrix_class():
     def lower(self, col, value, equal = True):
         return self.subset(self.col(col).lower(value, equal))
 
+    def between(self, col, lower, upper, lower_equal = False, upper_equal = False):
+        return self.subset(self.col(col).between(lower, upper, lower_equal, upper_equal))
+
+    def digitize(self, col, bins = 10):
+        return [self.subset(rows) for rows in self.col(col).digitize(bins)]
+
+
     def subset(self, rows = None):
         rows = self.correct_rows(rows)
         new = matrix_class()
@@ -232,6 +247,8 @@ class matrix_class():
         end = self.rows if end is None else min(end, self.rows)
         return self.subset(np.arange(start, end))
 
+    def copy(self):
+        return copy(self)
 
 
     
@@ -244,28 +261,6 @@ class matrix_class():
     # def non_categorical_cols(self):
     #     return [self.name(col) for col in self.Cols if not self.is_categorical(col)]
     
-
-
-
-
-
-
-
-
-    
-
-
-        
-
-
-    
-    def copy(self):
-        return copy(self)
-    
-
-
-        
-        
     # def set_col_names(self, names):
     #     [self.data[col].set_name(names[col]) for col in self.Cols]
 
@@ -317,3 +312,14 @@ class matrix_class():
 #     def print_types(self, cols = None):
 #         print(self.tabulate_types(cols))
 
+
+    # def tab(self, col1, col2, length = 10, norm = True):
+    #     if self.is_categorical(col1) and self.is_categorical(col2):
+    #         return self.categorical_tab(col1, col2, length = length, norm = norm)
+    #     elif self.is_categorical(col1) and self.is_not_categorical(col2):
+    #         return self.mixed_tab(col1, col2, length = length, norm = norm)
+    #     elif self.is_not_categorical(col1) and self.is_categorical(col2):
+    #         return self.mixed_tab(col2, col1, length = length)
+    #     else:#if self.is_not_categorical(col1) and self.is_not_categorical(col2):
+    #         return self.numerical_tab(col1, col2, length = length, norm = norm)
+        

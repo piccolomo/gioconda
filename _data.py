@@ -78,9 +78,10 @@ class data_class():
     def distinct(self, nan = True):
         return len(self.unique(nan))
 
-    def mode(self):
+    def mode(self, string = False):
         unique = self.unique()
-        return unique[0] if len(unique) > 0 else nan
+        mode = unique[0] if len(unique) > 0 else nan
+        return self.to_string(mode) if string else mode
 
 
     def to_categorical(self):
@@ -117,7 +118,7 @@ class data_class():
     def is_categorical(self):
         return self.type == 'categorical'
 
-    def is_non_categorical(self):
+    def is_not_categorical(self):
         return not self.is_categorical()
 
     def is_numerical(self):
@@ -138,7 +139,10 @@ class data_class():
         self.apply(lambda string: string.strip()) if self.is_categorical() else print('not categorical')
 
     def replace(self, old, new):
-        self.apply(lambda string: string.replace(old, new)) if self.is_categorical() else print('not categorical')
+        if self.is_categorical():
+            self.apply(lambda string: string.replace(old, new))
+        else:
+            self.data[self.equal(old)] = new
 
     def apply(self, function, *args):
         data = np.vectorize(function, *args)(self.data)
@@ -149,34 +153,38 @@ class data_class():
     def min(self, string = False):
         data = self.get_section(nan = False); l = len(data)
         m = nan if l == 0 or self.is_uncountable() else np.min(data)
-        return m
+        return self.to_string(m) if string else m
     
-    def max(self):
+    def max(self, string = False):
         data = self.get_section(nan = False); l = len(data)
         m = nan if l == 0 or self.is_uncountable() else np.max(data)
-        return m
+        return self.to_string(m) if string else m
 
-    def span(self):
+    def span(self, string = False):
         m, M = self.min(), self.max()
         s = M - m
-        return s if not self.is_datetime() else s
+        return self.to_string(s) if string else s
     
-    def std(self):
+    def std(self, string = False):
         data = self.get_section(nan = False); l = len(data)
-        return nan if l == 0 or self.is_uncountable() else std_datetime64(data) if self.is_datetime() else np.std(data)
-    
+        std = nan if l == 0 or self.is_uncountable() else std_datetime64(data) if self.is_datetime() else np.std(data)
+        return self.to_string(std) if string else std
+
     def density(self):
         std = self.std().item().total_seconds() if self.is_datetime() else self.std()
         span = self.span().item().total_seconds() if self.is_datetime() else self.span()
         return 100 * std / span if span != 0 else np.inf
 
-    def mean(self):
+    def mean(self, string = False):
         data = self.get_section(nan = False); l = len(data)
-        return nan if l == 0 or self.is_uncountable() else mean_datetime64(data) if self.is_datetime() else np.mean(data)
+        mean = nan if l == 0 or self.is_uncountable() else mean_datetime64(data) if self.is_datetime() else np.mean(data)
+        return self.to_string(mean) if string else mean
+    
 
-    def median(self):
+    def median(self, string = False):
         data = self.get_section(nan = False); l = len(data)
-        return nan if l == 0 or self.is_uncountable() else median_datetime64(data) if self.is_datetime() else np.median(data)
+        median = nan if l == 0 or self.is_uncountable() else median_datetime64(data) if self.is_datetime() else np.median(data)
+        return self.to_string(median) if string else median
 
     def get_numerical_data(self):
         data = self.get_section(nan = False)
@@ -201,9 +209,8 @@ class data_class():
         return {'name': self.name, 'index': self.index, 'type': self.type, 'rows': self.rows, 'nan': self.count_nan(), 'unique': self.distinct()}
 
     @mem(maxsize=None)
-    def numerical_info(self):
-        info = {'min': self.min(), 'max': self.max(), 'span': self.span(), 'nan': self.count_nan(1), 'mean': self.mean(), 'median': self.median(), 'mode': self.mode(), 'std': self.std(), 'density': self.density()}
-        return {k : self.to_string(info[k]) for k in info.keys()}
+    def numerical_info(self, string = True):
+        return {'min': self.min(string), 'max': self.max(string), 'span': self.span(string), 'nan': self.count_nan(1), 'mean': self.mean(string), 'median': self.median(string), 'mode': self.mode(string), 'std': self.std(string), 'density': self.density()}
     
     def info(self):
         info = self.basic_info()
@@ -211,7 +218,8 @@ class data_class():
         return info
 
     def plot(self, bins = 100):
-        plt.figure(0, figsize = (15, 8)); plt.clf()
+        width = 7; height = 9 / 16 * width
+        plt.figure(0, figsize = (7, 90 / 16)); plt.clf()
         bins = min(bins, len(self.unique())) if self.is_countable() else None
         plt.hist(self.get_section(nan = False), bins = bins) if self.is_countable() else None
         plt.bar(self.counts().keys(), self.counts().values()) if self.is_uncountable() else None
@@ -254,17 +262,21 @@ class data_class():
         
 
     def equal(self, value):
-        data = self.get_section(string = 1) if isinstance(value, str) and self.is_datetime() else self.data
-        return are_nan(self.data) if is_nan(value) else self.data == value
+        value = string_to_datetime64(value, self.form) if isinstance(value, str) and self.is_datetime() else value
+        return self.data == value
 
     def not_equal(self, value):
         return ~ self.equal(value)
 
     def higher(self, value, equal = False):
+        value = string_to_datetime64(value, self.form) if isinstance(value, str) and self.is_datetime() else value
         return self.data >= value if equal else self.data > value
 
     def lower(self, value, equal = False):
         return ~self.higher(value, not equal)
+
+    def between(self, lower, upper, lower_equal = False, upper_equal = False):
+        return self.higher(lower, lower_equal) & self.lower(upper, upper_equal)
 
 
     def copy(self):
@@ -275,6 +287,7 @@ class data_class():
         new.set_name(self.name)
         new.set_type(self.type)
         new.set_index(self.index)
+        new.set_forms(self.form, self.delta_form)
         return new
 
     def part(self, a = None, b = None):
@@ -286,6 +299,15 @@ class data_class():
         new = self.empty()
         new.set_data(self.get_section(rows))
         return new
+
+    def digitize(self, bins = 10):
+        m, M = self.min(), self.max()
+        delta = 0.5 * (M - m) / (bins - 1)
+        linspace = np.linspace if self.is_numerical() else linspace_datetime64
+        limit = linspace(m - delta, M + delta, bins + 1)
+        return [self.between(limit[i], limit[i + 1], 1, 0) for i in range(bins)]
+
+      
 
 
 nan = np.nan
@@ -300,6 +322,12 @@ def string_to_datetime64(string, form):
     return np.datetime64(dt.datetime.strptime(string, form)) if string != 'nan' else nat
 
 strings_to_datetime64 = lambda data, form: np.array([string_to_datetime64(el, form) for el in data], dtype = np.datetime64)
+
+def linspace_datetime64(start, end, bins):
+    delta = (end - start).item().total_seconds()
+    res = np.linspace(0, delta, bins)
+    res = [start.item() + dt.timedelta(seconds = el) for el in res]
+    return np.vectorize(np.datetime64)(res)
 
 def mean_datetime64(dates):
     std = dates[0].item() + dt.timedelta(seconds = np.mean(dates_to_seconds(dates)))
@@ -357,7 +385,6 @@ def tabulate(data, header = None, decimals = 1):
 
 transpose = lambda data: list(map(list, zip(*data)))
 pad = lambda string, length: string + sp * (length - len(string))
-
 
 
 
