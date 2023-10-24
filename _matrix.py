@@ -256,8 +256,6 @@ class matrix_class():
         new = matrix_class()
         return new
 
-
-    
     # def numerical_cols(self):
     #     return [self.name(col) for col in self.Cols if self.is_numerical(col)]
     

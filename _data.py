@@ -102,11 +102,6 @@ class data_class():
     def to_numbers(self, data):
         return np.vectorize(np.float64)(data)
 
-    def to_type_none(self):
-        self.set_data(self.data, 'none')
-        self.set_type('none')
-        return self
-
     def to_datetime(self, form = '%d/%m/%Y', delta_form = 'years'):
         self.data = strings_to_datetime64(self.data, form)
         self.update_length()
