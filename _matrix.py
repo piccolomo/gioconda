@@ -41,7 +41,7 @@ class matrix_class():
         return self.names().index(col) if isinstance(col, str) else col
 
     def indexes(self, cols):
-        return np.vectorize(self.index)(cols)
+        return np.vectorize(self.index)(cols) if len(cols) > 0 else []
 
     def name(self, col):
         return self.col(col).name
@@ -65,11 +65,11 @@ class matrix_class():
         rows = self.correct_rows(rows)
         cols = self.correct_cols(cols)
         data = np.transpose([self.col(col).get_section(rows, nan = nan, string = string) for col in cols])
-        data = np.concatenate([np.transpose([self.Rows]), data], axis = 1) if index else data
+        data = np.concatenate([np.transpose([rows]), data], axis = 1) if index and len(data) > 0 else data
         return data
 
     def correct_rows(self, rows):
-        return self.col(0).correct_rows(rows)
+        return self.col(0).correct_rows(rows) if self.cols > 0 else []
 
 
     def count(self, col, el, norm = False):
@@ -185,7 +185,7 @@ class matrix_class():
         self.col(col).plot(bins)
 
     def cross_plot(self, col1, col2):
-        plt.figure(0, figsize = (15, 8)); plt.clf()
+        plt.figure(0, figsize = figsize); plt.clf()
         plt.scatter(self.col(col1).get_section(nan = True), self.col(col2).get_section(nan = True))
         plt.xlabel(self.name(col1)); plt.ylabel(self.name(col2))
         plt.xticks(rotation = 90) if self.is_categorical(col1) else None
@@ -193,7 +193,8 @@ class matrix_class():
 
 
     def tabulate_data(self, rows = None, cols = None, header = True, index = False, decimals = 1):
-        header = self.names(cols, index) if header else None
+        head = self.names(cols, index) if header else None
+        header = np.concatenate([['index'], head]) if index * header == 1 else head
         return tabulate(self.get_section(rows, cols, index = index, string = 1), header = header, decimals = decimals)
 
     def tabulate_dimensions(self):
@@ -208,7 +209,8 @@ class matrix_class():
         return self.tabulate_dimensions() + 2 * nl + self.tabulate_types(cols)
 
     def print(self, rows = None, cols = None, header = True, index = False, decimals = 1):
-        rows = min(self.rows, plx.th() - 8) if rows is None else rows
+        rows = min(self.rows, plx.th() - 8) if rows is None else rows if isinstance(rows, list) else np.arange(0, rows)
+        cols = cols if not isinstance(cols, list) else np.arange(0, cols)
         print(self.tabulate_data(np.arange(rows), cols, header, index, decimals))
         print(nl + self.tabulate_dimensions())
 
@@ -249,6 +251,10 @@ class matrix_class():
 
     def copy(self):
         return copy(self)
+
+    def empty(self):
+        new = matrix_class()
+        return new
 
 
     

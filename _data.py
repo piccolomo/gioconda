@@ -7,6 +7,9 @@ from math import isnan
 from functools import lru_cache as mem
 from matplotlib import pyplot as plt
 
+width = 7; height = 9 / 16 * width
+figsize = (width, height)
+
 class data_class():
     def __init__(self, data = [], name = '', index = 'none'):
         self.set_data(data)
@@ -43,15 +46,15 @@ class data_class():
         return el
 
     def get_section(self, rows = None, nan = True, string = False):
-        rows = self.correct_rows(rows)
+        #rows = self.correct_rows(rows)
         data = self.data[rows]
-        data = data if nan else data[are_not_nan(data)]
+        data = data if nan else data[~np.vectorize(is_nan)(data)] if len(data) > 0 else data
         data = self.to_strings(data) if string else data
         return data
     
     def correct_rows(self, rows):
         return np.array([row for row in rows if row in self.Rows]) if isinstance(rows, list) else self.Rows if rows is None else rows
-    
+
 
     @mem(maxsize = None)
     def counts(self, norm = False):
@@ -68,7 +71,7 @@ class data_class():
         #return 100 * count / self.rows if norm else count
     
     def count_nan(self, norm = False):
-        c = np.count_nonzero(are_nan(self.data))
+        c = np.count_nonzero(np.vectorize(is_nan)(self.data))
         return nan if self.rows == 0 else 100 * c / self.rows if norm else c
 
     @mem(maxsize=None)
@@ -218,8 +221,7 @@ class data_class():
         return info
 
     def plot(self, bins = 100):
-        width = 7; height = 9 / 16 * width
-        plt.figure(0, figsize = (7, 90 / 16)); plt.clf()
+        plt.figure(0, figsize = figsize); plt.clf()
         bins = min(bins, len(self.unique())) if self.is_countable() else None
         plt.hist(self.get_section(nan = False), bins = bins) if self.is_countable() else None
         plt.bar(self.counts().keys(), self.counts().values()) if self.is_uncountable() else None
@@ -309,14 +311,11 @@ class data_class():
 
       
 
-
 nan = np.nan
 nat = np.datetime64('NaT')
 
 is_nan = lambda el: el is None or (isinstance(el, str) and el == 'nan') or (is_number(el) and isnan(el)) or (isinstance(el, np.datetime64) and np.isnan(el))
 is_number = lambda el: isinstance(el, float) or isinstance(el, int)
-are_nan = lambda data: np.array([is_nan(el) for el in data], dtype = np.bool_)
-are_not_nan = lambda data: np.array([not is_nan(el) for el in data], dtype = np.bool_)
 
 def string_to_datetime64(string, form):
     return np.datetime64(dt.datetime.strptime(string, form)) if string != 'nan' else nat
@@ -365,28 +364,57 @@ nl = '\n'
 delimiter = sp * 2 + 1 * vline + sp * 0
 
 def tabulate(data, header = None, decimals = 1):
-    cols = len(data[0]); rows = len(data); Cols = range(cols)
+    rows = len(data); cols = len(data[0]) if rows > 0 else 0; Cols = range(cols)
     to_string = lambda el: str(round(el, decimals)) if is_number(el) else str(el)
-    data = np.vectorize(to_string)(data)
-    data = np.concatenate([[header], data], axis = 0) if header is not None else data
+    data = np.vectorize(to_string)(data) if rows > 0 else data;
+    data = np.concatenate([[header], data], axis = 0) if header is not None and rows > 0 else data
     dataT = np.transpose(data)
     prepend_delimiter = lambda el: delimiter + el
-    dataT = [np.vectorize(prepend_delimiter)(dataT[i]) if i != 0 else dataT[i] for i in Cols]
+    dataT = np.array( [np.vectorize(prepend_delimiter)(dataT[i]) if i != 0 else dataT[i] for i in Cols])
     lengths = [max(np.vectorize(len)(data)) for data in dataT]
     Cols = np.array(Cols)[np.cumsum(lengths) <= plx.tw()]
-    dataT = [np.vectorize(pad)(dataT[i], lengths[i]) for i in Cols]
-    data = transpose(dataT)
+    dataT = np.array([np.vectorize(pad)(dataT[i], lengths[i]) for i in Cols])
+    data = np.transpose(dataT)
     lines = [''.join(line) for line in data]
-    lines[0] = plx.colorize(lines[0], style = 'bold') if header is not None else lines[0]
+    if rows > 0 and header is not None:
+        lines[0] = plx.colorize(lines[0], style = 'bold')
     out = nl.join(lines)
     return out
-
-
 
 transpose = lambda data: list(map(list, zip(*data)))
 pad = lambda string, length: string + sp * (length - len(string))
 
-
+def sign(date):
+    if is_nan(date):
+        return nan
+    date = date.item()
+    month, day = date.month, date.day
+    # if month == 12:
+    #     astro_sign = 'sagittarius' if (day < 22) else 'capricorn'
+    # elif month == 1:
+    #     astro_sign = 'capricorn' if (day < 20) else 'aquarius'
+    # elif month == 2:
+    #     astro_sign = 'aquarius' if (day < 19) else 'pisces'
+    # elif month == 3:
+    #     astro_sign = 'pisces' if (day < 21) else 'aries'
+    # elif month == 4:
+    #     astro_sign = 'aries' if (day < 20) else 'taurus'
+    # elif month == 5:
+    #     astro_sign = 'taurus' if (day < 21) else 'gemini'
+    # elif month == 6:
+    #     astro_sign = 'gemini' if (day < 21) else 'cancer'
+    # elif month == 7:
+    #     astro_sign = 'cancer' if (day < 23) else 'leo'
+    # elif month == 8:
+    #     astro_sign = 'leo' if (day < 23) else 'virgo'
+    # elif month == 9:
+    #     astro_sign = 'virgo' if (day < 23) else 'libra'
+    # elif month == 10:
+    #     astro_sign = 'libra' if (day < 23) else 'scorpio'
+    # elif month == 11:
+    #     astro_sign = 'scorpio' if (day < 22) else 'sagittarius'
+    return month
+    
 
 
 #     def select(self, value, data):
