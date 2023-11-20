@@ -3,53 +3,53 @@ from matplotlib import pyplot as plt
 
 class data_class():
     def __init__(self, data = [], name = '', index = 'none'):
-        self.set_data(data)
-        self.set_name(name)
-        self.set_type()
-        self.set_index(index)
-        self.set_forms()
+        self._set_data(data)
+        self._set_name(name)
+        self._set_type()
+        self._set_index(index)
+        self._set_forms()
 
-    def set_data(self, data = []):
-        self.data = np.array(data)
-        self.update_length()
+    def _set_data(self, data = []):
+        self._data = np.array(data)
+        self._update_length()
 
-    def set_name(self, name = 'none'):
-        self.name = name
+    def _set_name(self, name = 'none'):
+        self._name = name
 
-    def set_type(self, type = 'categorical'):
-        self.type = type
+    def _set_type(self, type = 'categorical'):
+        self._type = type
 
-    def set_index(self, index = 'none'):
-        self.index = index
+    def _set_index(self, index = 'none'):
+        self._index = index
 
-    def set_forms(self, form = '%d/%m/%Y', delta_form = 'years'):
-        self.form = form
-        self.delta_form = delta_form
+    def _set_forms(self, form = '%d/%m/%Y', delta_form = 'years'):
+        self._form = form
+        self._delta_form = delta_form
         
-    def update_length(self):
-        self.rows = len(self.data)
-        self.Rows = np.arange(self.rows)
+    def _update_length(self):
+        self._rows = len(self._data)
+        self._Rows = np.arange(self._rows)
 
 
     def get(self, row, string = False):
-        el = self.data[row]
-        el = self.to_string(el) if string else el
+        el = self._data[row]
+        el = self._to_string(el) if string else el
         return el
 
     def get_section(self, rows = None, nan = True, string = False):
-        rows = self.correct_rows(rows)
-        data = self.data[rows]
+        rows = self._correct_rows(rows)
+        data = self._data[rows]
         data = data if nan else data[are_not_nan(data)]
-        data = self.to_strings(data) if string else data
+        data = self._to_strings(data) if string else data
         return data
     
-    def correct_rows(self, rows):
-        return np.array([row for row in rows if row in self.Rows]) if isinstance(rows, list) else self.Rows if rows is None else rows
+    def _correct_rows(self, rows):
+        return np.array([row for row in rows if row in self._Rows]) if isinstance(rows, list) else self._Rows if rows is None else rows
     
 
     @mem(maxsize = None)
     def counts(self, norm = False, nan = True):
-        u, v = np.unique(self.data, return_counts = 1)
+        u, v = np.unique(self._data, return_counts = 1)
         nans = are_nan(u)
         u = u if nan else u[~nans]
         v = v if nan else v[~nans]
@@ -64,12 +64,12 @@ class data_class():
         #return 100 * count / self.rows if norm else count
     
     def count_nan(self, norm = False):
-        c = np.count_nonzero(are_nan(self.data))
-        return nan if self.rows == 0 else 100 * c / self.rows if norm else c
+        c = np.count_nonzero(are_nan(self._data))
+        return nan if self._rows == 0 else 100 * c / self._rows if norm else c
 
-    @mem(maxsize=None)
+    @mem(maxsize = None)
     def unique(self, nan = True):
-        return np.array(list(self.counts(False, nan).keys()), dtype = self.data.dtype)
+        return np.array(list(self.counts(False, nan).keys()), dtype = self._data.dtype)
 
     def distinct(self, nan = True):
         return len(self.unique(nan))
@@ -79,43 +79,43 @@ class data_class():
         return unique[0] if len(unique) > 0 else nan
 
 
-    def to_categorical(self):
-        self.data = self.to_strings(self.data)
-        self.update_length()
-        self.set_type('categorical')
+    def _to_categorical(self):
+        self._data = self._to_strings(self._data)
+        self._update_length()
+        self._set_type('categorical')
         return self
 
-    def to_numerical(self, dictionary = None):
-        self.data = self.to_numbers(self.data, dictionary)
-        self.update_length()
-        self.set_type('numerical')
+    def _to_numerical(self, dictionary = None):
+        self._data = self._to_numbers(self._data, dictionary)
+        self._update_length()
+        self._set_type('numerical')
         return self
 
-    def to_numbers(self, data, dictionary = None):
+    def _to_numbers(self, data, dictionary = None):
         return vectorize(np.float64, data) if dictionary is None else [dictionary[el] for el in data]
 
-    def to_datetime(self, form = '%d/%m/%Y', delta_form = 'years'):
-        self.data = strings_to_datetime64(self.data, form)
-        self.update_length()
-        self.set_type('datetime')
-        self.set_forms(form, delta_form)
+    def _to_datetime(self, form = '%d/%m/%Y', delta_form = 'years'):
+        self._data = strings_to_datetime64(self._data, form)
+        self._update_length()
+        self._set_type('datetime')
+        self._set_forms(form, delta_form)
         return self
 
 
     def is_mixed(self):
-        return self.type == 'mixed'
+        return self._type == 'mixed'
 
     def is_categorical(self):
-        return self.type == 'categorical'
+        return self._type == 'categorical'
 
     def is_non_categorical(self):
         return not self.is_categorical()
 
     def is_numerical(self):
-        return self.type == 'numerical'
+        return self._type == 'numerical'
     
     def is_datetime(self):
-        return self.type == 'datetime'
+        return self._type == 'datetime'
     
     def is_countable(self):
         return self.is_numerical() or self.is_datetime()
@@ -129,11 +129,11 @@ class data_class():
         self.apply(lambda string: string.strip()) if self.is_categorical() else print('not categorical')
 
     def replace(self, old, new):
-        self.apply(lambda string: string.replace(old, new)) if self.is_categorical() else print('not categorical')
+        self._apply(lambda string: string.replace(old, new)) if self.is_categorical() else print('not categorical')
 
     def apply(self, function):
-        data = vectorize(function, self.data)
-        self.set_data(data)
+        data = vectorize(function, self._data)
+        self._set_data(data)
 
 
         
@@ -169,35 +169,35 @@ class data_class():
         data = self.get_section(nan = False); l = len(data)
         return nan if l == 0 or self.is_uncountable() else median_datetime64(data) if self.is_datetime() else np.median(data)
 
-    def get_numerical_data(self):
+    def _get_numerical_data(self):
         data = self.get_section(nan = False)
         data = [el.item().timestamp() for el in data] if self.is_datetime() else data
         return data if self.is_countable() else []
     
     def multiply(self, k):
-        self.set_data(k * self.data) if self.is_numerical() else print('not numerical')
+        self._set_data(k * self._data) if self.is_numerical() else print('not numerical')
         
 
-    def tabulate_counts(self, norm = False, length = 10):
-        header = [self.name, 'count']
+    def _tabulate_counts(self, norm = False, length = 10):
+        header = [self._name, 'count']
         counts = list(self.counts(norm = norm).items())[: length]
         table = tabulate(counts, header = header) + nl
         return table
 
-    def print_counts(self, norm = False, length = 10):
-        print(self.tabulate_counts(norm, length))
+    def _print_counts(self, norm = False, length = 10):
+        print(self._tabulate_counts(norm, length))
         
     @mem(maxsize = None)
-    def basic_info(self):
-        return {'name': self.name, 'index': self.index, 'type': self.type, 'rows': self.rows, 'nan': self.count_nan(), 'unique': self.distinct(nan=False)}
+    def _basic_info(self):
+        return {'name': self._name, 'index': self._index, 'type': self._type, 'rows': self._rows, 'nan': self.count_nan(), 'unique': self.distinct(nan=False)}
 
     @mem(maxsize=None)
     def numerical_info(self):
         info = {'min': self.min(), 'max': self.max(), 'span': self.span(), 'nan': self.count_nan(1), 'mean': self.mean(), 'median': self.median(), 'mode': self.mode(), 'std': self.std(), 'density': self.density()}
-        return {k : self.to_string(info[k]) for k in info.keys()}
+        return {k : self._to_string(info[k]) for k in info.keys()}
     
     def info(self):
-        info = self.basic_info()
+        info = self._basic_info()
         info.update(self.numerical_info()) if self.is_countable() else None
         return info
 
@@ -206,56 +206,56 @@ class data_class():
         bins = min(bins, len(self.unique())) if self.is_countable() else None
         plt.hist(self.get_section(nan = False), bins = bins) if self.is_countable() else None
         plt.bar(self.counts().keys(), self.counts().values()) if self.is_uncountable() else None
-        plt.xlabel(self.name); plt.ylabel('count')
+        plt.xlabel(self._name); plt.ylabel('count')
         plt.xticks(rotation = 90) if self.is_categorical() else None
         plt.tight_layout(); plt.pause(0.1); plt.show(block = 1); plt.clf(); plt.close()
     
     
-    def tabulate_info(self):
+    def _tabulate_info(self):
         info = self.info()
         table = [list(info.keys()), list(info.values())]
         table = tabulate(np.transpose(table))
         return table + nl
 
     def print(self):
-        print(self.tabulate_info())
+        print(self._tabulate_info())
 
-    def get_sample_data(self, length = 10):
-        m = min(self.rows, length)
-        start = [self.to_string(self.data[i]) for i in range(0, m)]
-        end = [self.to_string(self.data[i]) for i in range(-m, 0)]
+    def _get_sample_data(self, length = 10):
+        m = min(self._rows, length)
+        start = [self._to_string(self._data[i]) for i in range(0, m)]
+        end = [self._to_string(self._data[i]) for i in range(-m, 0)]
         out = ', '.join(start)
-        out += ' ... ' if self.rows > length else ''
-        out += ', '.join(end) if self.rows > 2 * length else ''
+        out += ' ... ' if self._rows > length else ''
+        out += ', '.join(end) if self._rows > 2 * length else ''
         return out
 
-    def to_string(self, el):
-        return 'nan' if is_nan(el) else el.item().strftime(self.form) if isinstance(el, np.datetime64) else timedelta64_to_string(el, self.delta_form) if isinstance(el, np.timedelta64) else str(round(el, 2)) if is_number(el) else str(el)
+    def _to_string(self, el):
+        return 'nan' if is_nan(el) else el.item().strftime(self._form) if isinstance(el, np.datetime64) else timedelta64_to_string(el, self._delta_form) if isinstance(el, np.timedelta64) else str(round(el, 2)) if is_number(el) else str(el)
 
-    def to_strings(self, data):
-        return np.array([self.to_string(el) for el in data])
+    def _to_strings(self, data):
+        return np.array([self._to_string(el) for el in data])
 
     def __str__(self):
-        return self.tabulate_info() + nl + sp + self.get_sample_data()
+        return self._tabulate_info() + nl + sp + self._get_sample_data()
 
     def __repr__(self):
         return str(self)
 
     def __getitem__(self, row):
-        return self.data[row]
+        return self._data[row]
 
 
         
 
     def equal(self, value):
-        data = self.get_section(string = 1) if isinstance(value, str) and self.is_datetime() else self.data
-        return are_nan(self.data) if is_nan(value) else self.data == value
+        data = self.get_section(string = 1) if isinstance(value, str) and self.is_datetime() else self._data
+        return are_nan(self._data) if is_nan(value) else self._data == value
 
     def not_equal(self, value):
         return ~ self.equal(value)
 
     def higher(self, value, equal = False):
-        return self.data >= value if equal else self.data > value
+        return self._data >= value if equal else self._data > value
 
     def lower(self, value, equal = False):
         return ~self.higher(value, not equal)
@@ -266,43 +266,17 @@ class data_class():
 
     def empty(self):
         new = self.__class__([])
-        new.set_name(self.name)
-        new.set_type(self.type)
-        new.set_index(self.index)
+        new._set_name(self._name)
+        new._set_type(self._type)
+        new._set_index(self._index)
         return new
 
     def part(self, a = None, b = None):
         a = 0 if a is None else a
-        b = self.rows if b is None else b
+        b = self._rows if b is None else b
         return self.subset(np.arange(a, b))
     
     def subset(self, rows):
         new = self.empty()
-        new.set_data(self.get_section(rows))
+        new._set_data(self.get_section(rows))
         return new
-
-
-
-
-#     def select(self, value, data):
-#         new = data.empty()
-#         rows = self.equal(value)
-#         new.set_data(data.get(rows))
-#         return new
-
-#     def cross_count(self, value, data, norm = False):
-#         s = self.select(value, data)
-#         c = s.not_nan() if s.is_categorical() else s.mean()
-#         return 100 * c / self.rows if norm else c
-
-#     def cross_counts(self, data, norm = False, nan = True):
-#         u = self.unique(nan)
-#         v = [self.cross_count(el, data, norm) for el in u]
-#         c = transpose([u, v])
-#         return sorted(c, key = lambda el: data.min() if isinstance(el[1], str) else el[1], reverse = True)
-
-#     def cross_unique(self, data, nan = True):
-#         return [el[0] for el in self.cross_counts(data, 0, nan)]
-3
-    # def get_numpy_type(self, type):
-    #     return object if type == 'mixed' else '<U3' if type == 'categorical' else np.float64 if type == 'numerical' else np.datetime64 if type == 'datetime' else None

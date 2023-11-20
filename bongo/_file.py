@@ -25,7 +25,7 @@ def read_data(file_name, delimiter = ',', header = False, log = True):
     print('loading data') if log else None
     matrix = split_lines(lines, delimiter)
     data = matrix_class()
-    data.add_matrix(matrix, header)
+    data._add_matrix(matrix, header)
     print('data loaded!\n') if log else None
     return data
 

@@ -9,6 +9,7 @@ import shutil
 
 # System
 tw = lambda: shutil.get_terminal_size()[1]
+th = lambda: shutil.get_terminal_size()[0]
 
 # Values
 nan = np.nan
