@@ -1,1 +1,1 @@
-Bongo is a package to simplify **tabular data manadgment**. 
+Bongo is a package to simplify **tabular data manadgment**. The documentation is available [here](https://bongo.readthedocs.io). 
