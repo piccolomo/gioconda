@@ -6,16 +6,16 @@ from setuptools import setup, find_packages
 HERE = pathlib.Path(__file__).parent
 
 # The text of the README file
-#README = (HERE / "README.md").read_text()
+README = (HERE / "README.md").read_text()
 
 setup(
     author = "Savino Piccolomo",
     author_email = "piccolomo@gmail.com",
     name = 'bongo',
-    version='1.5.0',
+    version='1.5.2',
     description = 'handles tabular data',
-    #long_description = README,
-    #long_description_content_type = "text/markdown",  
+    long_description = README,
+    long_description_content_type = "text/markdown",  
     license = "MIT",
     url = 'https://github.com/piccolomo/bongo',
     packages = find_packages(),
