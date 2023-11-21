@@ -20,7 +20,7 @@ setup(
     url = 'https://github.com/piccolomo/bongo',
     packages = find_packages(),
     python_requires = ">=3.10.0, <=3.11.4",
-    #include_package_data = True,
-    #install_requires = ["pandas >= 2.0.0", "numpy >= 1.24.0", "scipy >= 1.10.0", "matplotlib >= 3.7.0", "prophet >= 1.1.0", "pmdarima >= 2.0.0"],
+    include_package_data = True,
+    install_requires = ["numpy >= 1.24.0", "matplotlib >= 3.7.0"],
     classifiers = []
     )

@@ -1,6 +1,7 @@
 from bongo._methods import *
 from matplotlib import pyplot as plt
 
+
 class data_class():
     def __init__(self, data = [], name = '', index = 'none'):
         self._set_data(data)

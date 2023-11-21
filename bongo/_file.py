@@ -6,6 +6,8 @@ import inspect
 
 # File Utilities
 script_folder = lambda: os.path.abspath(os.path.join(inspect.getfile(sys._getframe(1)), os.pardir))
+source_folder = os.path.dirname(os.path.realpath(__file__))
+test_data_path = os.path.join(source_folder, 'test_data.csv')
 
 join = os.path.join
 
@@ -20,7 +22,8 @@ def read_lines(path, log = True):
 def split_lines(lines, delimiter = ','):
     return [line.replace("\n", "").split(delimiter) for line in lines]
 
-def read_data(file_name, delimiter = ',', header = False, log = True):
+def read(file_name, delimiter = ',', header = False, log = True):
+    "Random Doc"
     lines = read_lines(file_name, log = log)
     print('loading data') if log else None
     matrix = split_lines(lines, delimiter)
@@ -29,16 +32,15 @@ def read_data(file_name, delimiter = ',', header = False, log = True):
     print('data loaded!\n') if log else None
     return data
 
+# def write_pickle(path, object):
+#     print("writing pickle")
+#     with open(path, 'wb') as f:
+#         pickle.dump(object, f)
+#     print("pickle written!\n")
 
-def write_pickle(path, object):
-    print("writing pickle")
-    with open(path, 'wb') as f:
-        pickle.dump(object, f)
-    print("pickle written!\n")
-
-def read_pickle(path):
-    print("reading pickle", path)
-    with open(path, 'rb') as f:
-        data = pickle.load(f)
-    print("pickle read!\n")
-    return data
+# def read_pickle(path):
+#     print("reading pickle", path)
+#     with open(path, 'rb') as f:
+#         data = pickle.load(f)
+#     print("pickle read!\n")
+#     return data

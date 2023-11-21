@@ -20,7 +20,7 @@ class matrix_class():
 
     def _update_size(self):
         self._set_cols(len(self._data))
-        self.set_rows(self.col(0)._rows if self._cols > 0 else 0)
+        self.set_rows(self.column(0)._rows if self._cols > 0 else 0)
 
     def set_rows(self, rows):
         self._rows = rows
@@ -40,11 +40,11 @@ class matrix_class():
         data = np.transpose(matrix)
         [self._add_data(data[i], names[i]) for i in range(cols)]
 
-    def _set_names(self, names):
-        [self.col(col)._et_name(names[col]) for col in self._Cols]
+    def set_names(self, names):
+        [self.column(col)._set_name(names[col]) for col in self._Cols]
         
 
-    def col(self, col):
+    def column(self, col):
         col = self._index(col)
         return self._data[col]
 
@@ -55,7 +55,7 @@ class matrix_class():
         return vectorize(self._index, cols)
 
     def _name(self, col):
-        return self.col(col)._name
+        return self.column(col)._name
 
     def _names(self, cols = None, index = False):
         cols = self._correct_cols(cols)
@@ -65,70 +65,70 @@ class matrix_class():
         return np.array([col for col in cols if col in self._Cols]) if isinstance(cols, list) else self._Cols if cols is None else cols
 
     def _type(self, col):
-        return self.col(col)._type
+        return self.column(col)._type
 
     def _types(self, cols = None):
         cols = self._correct_cols(cols)
-        return [self.col(col)._type for col in cols]
+        return [self.column(col)._type for col in cols]
 
     
     def get_section(self, rows = None, cols = None, nan = True, string = False, index = False):
         rows = self._correct_rows(rows)
         cols = self._correct_cols(cols)
-        data = np.transpose([self.col(col).get_section(rows, nan = nan, string = string) for col in cols])
+        data = np.transpose([self.column(col).get_section(rows, nan = nan, string = string) for col in cols])
         data = np.concatenate([np.transpose([self._Rows]), data], axis = 1) if index else data
         return data
 
     def _correct_rows(self, rows):
-        return self.col(0)._correct_rows(rows)
+        return self.column(0)._correct_rows(rows)
 
 
     def count(self, col, el, norm = False):
-        return self.col(col).count(el, norm = norm)
+        return self.column(col).count(el, norm = norm)
     
     def counts(self, col, norm = False, nan = True):
-        return self.col(col).counts(norm, nan)
+        return self.column(col).counts(norm, nan)
 
     def unique(self, col, nan = True):
-        return self.col(col).unique(nan)
+        return self.column(col).unique(nan)
 
     def distinct(self, col, nan = True):
-        return self.col(col).distinct(nan)
+        return self.column(col).distinct(nan)
 
     def _cross_count(self, col1, col2, val1, val2, norm = False):
         # return self.equal(col1, val1).count(col2, val2, norm = norm)
-        rows1 = self.col(col1).equal(val1)
-        count = np.count_nonzero(rows1 & self.col(col2).equal(val2))
+        rows1 = self.column(col1).equal(val1)
+        count = np.count_nonzero(rows1 & self.column(col2).equal(val2))
         return 100 * count / np.count_nonzero(rows1) if norm else count
 
 
     def to_numerical(self, col, dictionary = None):
-        return self.col(col)._to_numerical(dictionary)
+        return self.column(col)._to_numerical(dictionary)
     
     def to_categorical(self, col):
-        return self.col(col)._to_categorical()
+        return self.column(col)._to_categorical()
     
     def to_datetime(self, col, form = '%d/%m/%Y', delta_form = 'years'):
-        return self.col(col)._to_datetime(form, delta_form)
+        return self.column(col)._to_datetime(form, delta_form)
     
 
     def is_categorical(self, col):
-        return self.col(col).is_categorical()
+        return self.column(col).is_categorical()
 
     def is_non_categorical(self, col):
-        return self.col(col).is_non_categorical()
+        return self.column(col).is_non_categorical()
 
     def is_numerical(self, col):
-        return self.col(col).is_numerical()
+        return self.column(col).is_numerical()
     
     def is_datetime(self, col):
-        return self.col(col).is_datetime()
+        return self.column(col).is_datetime()
 
     def is_countable(self, col):
-        return self.col(col).is_countable()
+        return self.column(col).is_countable()
 
     def is_uncountable(self, col):
-        return self.col(col).is_uncountable()
+        return self.column(col).is_uncountable()
     
     def categorical_cols(self):
         return [self._name(col) for col in self._Cols if self.is_categorical(col)]
@@ -139,16 +139,16 @@ class matrix_class():
 
     def strip(self, cols = None):
         cols = self._correct_cols(cols)
-        [self.col(col).strip() for col in cols]
+        [self.column(col).strip() for col in cols]
 
     def replace(self, old, new, cols = None):
         cols = self._correct_cols(cols)
-        [self.col(col).replace(old, new) for col in cols]
+        [self.column(col).replace(old, new) for col in cols]
 
 
     def numerical_info(self):
         cols = self.countable_cols()
-        infos = [self.col(col).numerical_info() for col in cols]
+        infos = [self.column(col).numerical_info() for col in cols]
         header = list(infos[0].keys())
         table = [list(el.values()) for el in infos]
         table = [header] + table
@@ -159,7 +159,7 @@ class matrix_class():
     def categorical_info(self, norm = False, cols = None, length = 10):
         cols = self._correct_cols(cols)
         cols = [col for col in cols if self.is_categorical(col)]
-        [self.col(col)._print_counts(norm = norm, length = length) for col in cols]
+        [self.column(col)._print_counts(norm = norm, length = length) for col in cols]
 
     def _categorical_cross_counts(self, col1, col2, norm = False, length = 10):
         unique1 = list(self.unique(col1))[:length]; unique2 = list(self.unique(col2))[:length]
@@ -171,7 +171,7 @@ class matrix_class():
 
     def _mixed_cross_counts(self, col1, col2, length = 10):
         unique1 = list(self.unique(col1))[ : length]; unique2 = list(self.unique(col2))[ : length]
-        data1 = [self.equal(col1, u1).col(col2) for u1 in unique1]
+        data1 = [self.equal(col1, u1).column(col2) for u1 in unique1]
         table = [[data._to_string(data.mean()), data._to_string(data.std()), data._rows] for data in data1]
         table = [[unique1[i]] + table[i] for i in range(len(table))]
         header = [self._name(col1) + ' / ' + self._name(col2), 'mean', 'std', 'len']
@@ -189,11 +189,11 @@ class matrix_class():
             return self._mixed_cross_counts(col2, col1, length = length)
         
     def plot(self, col, bins = 100):
-        self.col(col).plot(bins)
+        self.column(col).plot(bins)
 
     def cross_plot(self, col1, col2):
         plt.figure(0, figsize = (15, 8)); plt.clf()
-        plt.scatter(self.col(col1).get_section(nan = True), self.col(col2).get_section(nan = True))
+        plt.scatter(self.column(col1).get_section(nan = True), self.column(col2).get_section(nan = True))
         plt.xlabel(self._name(col1)); plt.ylabel(self._name(col2))
         plt.xticks(rotation = 90) if self.is_categorical(col1) else None
         plt.tight_layout(); plt.pause(0.1); plt.show(block = 1); plt.clf(); plt.close()
@@ -222,22 +222,23 @@ class matrix_class():
     def __repr__(self):
         return self._tabulate_info()
 
+    
     def __getitem__(self, col):
-        return self.col(col)
+        return self.column(col)
 
 
 
     def equal(self, col, value):
-        return self.subset(self.col(col).equal(value))
+        return self.subset(self.column(col).equal(value))
 
     def not_equal(self, col, value):
-        return self.subset(self.col(col).not_equal(value))
+        return self.subset(self.column(col).not_equal(value))
     
     def greater(self, col, value, equal = True):
-        return self.subset(self.col(col).greater(value, equal))
+        return self.subset(self.column(col).greater(value, equal))
 
     def lower(self, col, value, equal = True):
-        return self.subset(self.col(col).lower(value, equal))
+        return self.subset(self.column(col).lower(value, equal))
 
     def subset(self, rows = None):
         rows = self._correct_rows(rows)
@@ -271,9 +272,9 @@ class matrix_class():
         self.to_datetime(name, form)
 
     def duplicate(self, col, name):
-        data = self.col(col)._data
+        data = self.column(col)._data
         self._add_data(data, name)
-        self.col(name)._set_type(self.col(col)._type)
+        self.column(name)._set_type(self.column(col)._type)
 
     def delete(self, col):
         index = self._index(col)

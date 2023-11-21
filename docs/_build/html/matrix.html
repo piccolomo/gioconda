@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Data Management &mdash; bongo 1.5 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=aaadad1f"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Column Management" href="data.html" />
+    <link rel="prev" title="Loading Data" href="get.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            bongo
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="get.html">Loading Data</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Data Management</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#column-types">Column Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#numerical-info">Numerical Info</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#categorical-info">Categorical Info</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#selection">Selection</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="data.html">Column Management</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">bongo</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Data Management</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/matrix.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="data-management">
+<h1>Data Management<a class="headerlink" href="#data-management" title="Link to this heading"></a></h1>
+<section id="column-types">
+<h2>Column Types<a class="headerlink" href="#column-types" title="Link to this heading"></a></h2>
+<p>When data is initially loaded, all columns are interpreted as categorical. To specify the columns types and interpret the data accordingly, follow this example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">bongo</span>
+
+<span class="n">data</span> <span class="o">=</span> <span class="n">bongo</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">bongo</span><span class="o">.</span><span class="n">test_data_path</span><span class="p">,</span> <span class="n">header</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+
+<span class="n">data</span><span class="o">.</span><span class="n">to_numerical</span><span class="p">(</span><span class="s1">&#39;n1&#39;</span><span class="p">)</span>
+<span class="n">data</span><span class="o">.</span><span class="n">to_numerical</span><span class="p">(</span><span class="s1">&#39;n2&#39;</span><span class="p">)</span>
+
+<span class="n">data</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="s1">&#39;d1&#39;</span><span class="p">,</span> <span class="n">form</span> <span class="o">=</span> <span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1">&#39;</span><span class="p">)</span>
+<span class="n">data</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="s1">&#39;d2&#39;</span><span class="p">,</span> <span class="n">form</span> <span class="o">=</span> <span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1">&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In the previous example <code class="docutils literal notranslate"><span class="pre">form</span></code> is a parameter used to interpret datetime objects. Now the data is represented as:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">rows  │cols</span>
+<span class="go">67    │7</span>
+
+<span class="go">i  │column  │type</span>
+<span class="go">0  │c1      │categorical</span>
+<span class="go">1  │c2      │categorical</span>
+<span class="go">2  │c3      │categorical</span>
+<span class="go">3  │d1      │datetime</span>
+<span class="go">4  │d2      │datetime</span>
+<span class="go">5  │n1      │numerical</span>
+<span class="go">6  │n2      │numerical</span>
+</pre></div>
+</div>
+</section>
+<section id="numerical-info">
+<h2>Numerical Info<a class="headerlink" href="#numerical-info" title="Link to this heading"></a></h2>
+<p>To get at a glance all relevant information on the numerical (and datetime) columns use the <code class="docutils literal notranslate"><span class="pre">data.numerical_info()</span></code> method, which for the test data would print the following table:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">         │d1          │d2          │n1     │n2</span>
+<span class="go">min      │2023-01-15  │2023-02-20  │1.62   │0.4</span>
+<span class="go">max      │2034-01-30  │2034-02-25  │4.78   │2.5</span>
+<span class="go">span     │11.0        │11.0        │3.16   │2.1</span>
+<span class="go">nan      │0.0         │0.0         │0.0    │0.0</span>
+<span class="go">mean     │2028-07-16  │2028-08-18  │3.27   │1.36</span>
+<span class="go">median   │2028-07-04  │2028-08-06  │3.14   │1.3</span>
+<span class="go">mode     │2023-01-15  │2023-02-20  │1.62   │0.4</span>
+<span class="go">std      │3.2         │3.2         │0.83   │0.62</span>
+<span class="go">density  │29.2        │29.27       │26.32  │29.66</span>
+</pre></div>
+</div>
+</section>
+<section id="categorical-info">
+<h2>Categorical Info<a class="headerlink" href="#categorical-info" title="Link to this heading"></a></h2>
+<p>To get at a glance all relevant information on the numerical columns use the <code class="docutils literal notranslate"><span class="pre">data.categorical_info()</span></code> method, which will psrint the counts for each categorical column. It accept the following parameters:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">cols</span></code> the list of categorical columns (integers or column string names or both).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">norm</span> <span class="pre">=</span> <span class="pre">False</span></code> whatever to normalize or not the counts.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">length</span> <span class="pre">=</span> <span class="pre">10</span></code> the maximum number of categories to show (useful for data with a really large number of categories).</p></li>
+</ul>
+<p>For the test data this returns:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">c1         │count</span>
+<span class="go">CategoryA  │25</span>
+<span class="go">CategoryB  │22</span>
+<span class="go">CategoryC  │20</span>
+
+<span class="go">c2      │count</span>
+<span class="go">Blue    │17</span>
+<span class="go">Green   │17</span>
+<span class="go">Red     │17</span>
+<span class="go">Yellow  │16</span>
+
+<span class="go">c3   │count</span>
+<span class="go">No   │25</span>
+<span class="go">Yes  │42</span>
+</pre></div>
+</div>
+</section>
+<section id="selection">
+<h2>Selection<a class="headerlink" href="#selection" title="Link to this heading"></a></h2>
+<p>One could easily select a subset of the original dataset using the following methods:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">data.equal(col,</span> <span class="pre">value)</span></code>: to select all the rows where the given column is equal to the given value.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">data.not_equal(col,</span> <span class="pre">value)</span></code>: to select all the rows where the given column is not equal to the given value.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">data.greater(col,</span> <span class="pre">value,</span> <span class="pre">equal</span> <span class="pre">=</span> <span class="pre">True)</span></code>: to select all the rows where the given column is greater (or optionally equal) to the given value.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">data.lower(col,</span> <span class="pre">value,</span> <span class="pre">equal</span> <span class="pre">=</span> <span class="pre">True)</span></code>: to select all the rows where the given column is lower (or optionally equal) to the given value.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">data.subset(rows)</span></code>: to select the specified rows.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">data.part(start,</span> <span class="pre">end)</span></code>: to select the rows from <code class="docutils literal notranslate"><span class="pre">start</span></code> to <code class="docutils literal notranslate"><span class="pre">end</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">data.copy()</span></code>: to copy the entire dataset.</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="get.html" class="btn btn-neutral float-left" title="Loading Data" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="data.html" class="btn btn-neutral float-right" title="Column Management" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, SP.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
