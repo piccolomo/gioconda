@@ -1,1 +1,1 @@
-Bongo is a package to simplify **tabular data manadgment**. The documentation is available [here](https://gioconda.readthedocs.io). 
+Gioconda is a package to simplify **tabular data manadgment**. The documentation is available [here](https://gioconda.readthedocs.io). 
