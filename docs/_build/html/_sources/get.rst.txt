@@ -9,12 +9,12 @@ Data can be imported from text file (like :file:`.txt` or :file:`.csv`) using th
 
 .. code:: python
 
-    import bongo
+    import gioconda
 
-    path = bongo.join(b.script_folder(), 'data.csv')
-    data = bongo.read(path, delimiter = ',', header = False, log = True)
+    path = gioconda.join(b.script_folder(), 'data.csv')
+    data = gioconda.read(path, delimiter = ',', header = False, log = True)
 
-As one would except, the `delimiter` parameter specifies how columns are separated in the text file, while `header` specifies if column headers are included. If column headers are included, bongo recognizes them as column names. 
+As one would except, the `delimiter` parameter specifies how columns are separated in the text file, while `header` specifies if column headers are included. If column headers are included, gioconda recognizes them as column names. 
 
 To manually set the column names, use the method ``data.set_names(names)``, where names is a list of strings. 
 
@@ -26,9 +26,9 @@ To load a test data set use:
 
 .. code:: python
 
-    import bongo
+    import gioconda
 
-    data = bongo.read(bongo.test_data_path, header = 1)
+    data = gioconda.read(gioconda.test_data_path, header = 1)
 
 which will be represented as:
 
@@ -53,9 +53,9 @@ You could also simulate data this way:
 
 .. code-block:: python
    
-   import bongo
+   import gioconda
 
-   data = bongo.matrix_class()
+   data = gioconda.matrix_class()
    data.set_rows(40)
 
    data.simulate_numerical('duration', mean = 2560, std = 3, nan_ratio = 0.1)

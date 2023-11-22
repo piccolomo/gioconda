@@ -1,9 +1,9 @@
-Bongo
-=====
+Gioconda
+========
 
-Bongo is a package to simplify **tabular data manadgment** and it recognises three data types: **categorical, numerical and datetime**. 
+Gioconda is a package to simplify **tabular data manadgment** and it recognizes three data types: **categorical, numerical and datetime**. 
 
-This tool is at a very early stage of development and, at the moment strongly relies on numpy.
+This tool is at a very early stage of development and, at the moment strongly relies on ``numpy``.
 
 Installation
 ------------
@@ -11,7 +11,7 @@ Installation
 
 .. code-block:: console
 
-    pip install git+https://github.com/piccolomo/bongo
+    pip install git+https://github.com/piccolomo/gioconda
 
 Documentation
 =============

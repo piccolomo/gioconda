@@ -10,9 +10,9 @@ When data is initially loaded, all columns are interpreted as categorical. To sp
 
 .. code:: python
 
-   import bongo 
+   import gioconda 
 
-   data = bongo.read(bongo.test_data_path, header = True)
+   data = gioconda.read(gioconda.test_data_path, header = True)
 
    data.to_numerical('n1')
    data.to_numerical('n2')

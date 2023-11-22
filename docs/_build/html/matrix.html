@@ -83,9 +83,9 @@
 <section id="column-types">
 <h2>Column Types<a class="headerlink" href="#column-types" title="Link to this heading"></a></h2>
 <p>When data is initially loaded, all columns are interpreted as categorical. To specify the columns types and interpret the data accordingly, follow this example:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">bongo</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">gioconda</span>
 
-<span class="n">data</span> <span class="o">=</span> <span class="n">bongo</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">bongo</span><span class="o">.</span><span class="n">test_data_path</span><span class="p">,</span> <span class="n">header</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">gioconda</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">gioconda</span><span class="o">.</span><span class="n">test_data_path</span><span class="p">,</span> <span class="n">header</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
 
 <span class="n">data</span><span class="o">.</span><span class="n">to_numerical</span><span class="p">(</span><span class="s1">&#39;n1&#39;</span><span class="p">)</span>
 <span class="n">data</span><span class="o">.</span><span class="n">to_numerical</span><span class="p">(</span><span class="s1">&#39;n2&#39;</span><span class="p">)</span>
