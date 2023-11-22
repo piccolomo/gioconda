@@ -8,9 +8,9 @@
 
 import os, sys
 sys.path.insert(0, os.path.abspath('..'))
-import bongo
+import gioconda
 
-project = 'bongo'
+project = 'gioconda'
 copyright = '2023, SP'
 author = 'SP'
 release = '1.5'

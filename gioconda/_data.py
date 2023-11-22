@@ -1,4 +1,4 @@
-from bongo._methods import *
+from gioconda._methods import *
 from matplotlib import pyplot as plt
 
 

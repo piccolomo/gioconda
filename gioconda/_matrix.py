@@ -1,5 +1,5 @@
-from bongo._data import *
-from bongo._methods import *
+from gioconda._data import *
+from gioconda._methods import *
 
 
 class matrix_class():

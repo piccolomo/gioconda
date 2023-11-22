@@ -1,6 +1,6 @@
 import pickle
-from bongo._matrix import matrix_class
-from bongo._data import nl
+from gioconda._matrix import matrix_class
+from gioconda._data import nl
 import os, sys
 import inspect 
 
