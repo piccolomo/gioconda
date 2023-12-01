@@ -35,13 +35,13 @@ class matrix_class():
 
     def _add_matrix(self, matrix, header = False):
         cols = len(matrix[0])
-        names = matrix[0] if header else [None] * cols
+        columns = matrix[0] if header else [None] * cols
         matrix = matrix[1:] if header else matrix
         data = np.transpose(matrix)
-        [self._add_data(data[i], names[i]) for i in range(cols)]
+        [self._add_data(data[i], columns[i]) for i in range(cols)]
 
-    def set_names(self, names):
-        [self.column(col)._set_name(names[col]) for col in self._Cols]
+    def set_columns(self, columns):
+        [self.column(col)._set_name(columns[col]) for col in self._Cols]
         
 
     def column(self, col):
@@ -49,7 +49,7 @@ class matrix_class():
         return self._data[col]
 
     def _index(self, col):
-        return self._names().index(col) if isinstance(col, str) else col
+        return self.columns().index(col) if isinstance(col, str) else col
 
     def _indexes(self, cols):
         return vectorize(self._index, cols)
@@ -57,12 +57,15 @@ class matrix_class():
     def _name(self, col):
         return self.column(col)._name
 
-    def _names(self, cols = None, index = False):
+    def rename(self, col, name):
+        self.column(col)._set_name(name)
+
+    def columns(self, cols = None, index = False):
         cols = self._correct_cols(cols)
         return [self._name(col) for col in cols]
 
     def _correct_cols(self, cols):
-        return np.array([col for col in cols if col in self._Cols]) if isinstance(cols, list) else self._Cols if cols is None else cols
+        return np.array([col for col in cols if col in self._Cols or col in self.columns()]) if isinstance(cols, list) else self._Cols if cols is None else cols
 
     def _type(self, col):
         return self.column(col)._type
@@ -103,13 +106,13 @@ class matrix_class():
 
 
     def to_numerical(self, col, dictionary = None):
-        return self.column(col)._to_numerical(dictionary)
+        return self.column(col).to_numerical(dictionary)
     
     def to_categorical(self, col):
-        return self.column(col)._to_categorical()
+        return self.column(col).to_categorical()
     
     def to_datetime(self, col, form = '%d/%m/%Y', delta_form = 'years'):
-        return self.column(col)._to_datetime(form, delta_form)
+        return self.column(col).to_datetime(form, delta_form)
     
 
     def is_categorical(self, col):
@@ -132,6 +135,9 @@ class matrix_class():
     
     def categorical_cols(self):
         return [self._name(col) for col in self._Cols if self.is_categorical(col)]
+    
+    def numerical_cols(self):
+        return [self._name(col) for col in self._Cols if self.is_numerical(col)]
     
     def countable_cols(self):
         return [self._name(col) for col in self._Cols if self.is_countable(col)]
@@ -169,24 +175,25 @@ class matrix_class():
         table = tabulate(table, header = header, decimals = 1)
         print(table)
 
-    def _mixed_cross_counts(self, col1, col2, length = 10):
-        unique1 = list(self.unique(col1))[ : length]; unique2 = list(self.unique(col2))[ : length]
-        data1 = [self.equal(col1, u1).column(col2) for u1 in unique1]
-        table = [[data._to_string(data.mean()), data._to_string(data.std()), data._rows] for data in data1]
-        table = [[unique1[i]] + table[i] for i in range(len(table))]
-        header = [self._name(col1) + ' / ' + self._name(col2), 'mean', 'std', 'len']
+    def _mixed_cross_counts(self, col1, col2, metric = 'mean', length = 10):
+        unique = list(self.unique(col1))[ : length];
+        value = list(self._get_encoding(col1, col2, metric, 1).values()) [ : length]
+        name = self._name(col1) + ' / ' + self._name(col2)
+        header = ['unique', metric]
+        table = np.transpose([unique, value])
         table = tabulate(table, header = header, decimals = 1)
         print(table)
 
-    def tab(self, col1, col2, norm = False, length = 10):
+    def tab(self, col1, col2, norm = False, metric = 'mean', length = 30):
         if self.is_non_categorical(col1) and self.is_non_categorical(col2):
             print('Warning: At least one column should be categorical')
         elif self.is_categorical(col1) and self.is_categorical(col2):
             return self._categorical_cross_counts(col1, col2, norm = norm, length = length)
         elif self.is_categorical(col1) and self.is_non_categorical(col2):
-            return self._mixed_cross_counts(col1, col2, length = length)
+            return self._mixed_cross_counts(col1, col2, metric, length)
         else:
-            return self._mixed_cross_counts(col2, col1, length = length)
+            print('Warning: Columns switched')
+            return self._mixed_cross_counts(col2, col1, metric, length)
         
     def plot(self, col, bins = 100):
         self.column(col).plot(bins)
@@ -200,7 +207,7 @@ class matrix_class():
 
 
     def _tabulate_data(self, rows = None, cols = None, header = True, index = False, decimals = 1):
-        header = self._names(cols, index) if header else None
+        header = self.columns(cols, index) if header else None
         return tabulate(self.get_section(rows, cols, index = index, string = 1), header = header, decimals = decimals)
 
     def _tabulate_dimensions(self):
@@ -208,7 +215,7 @@ class matrix_class():
 
     def _tabulate_types(self, cols = None):
         cols = self._Cols if cols is None else cols
-        table = np.transpose([self._indexes(cols), self._names(cols), self._types(cols)])
+        table = np.transpose([self._indexes(cols), self.columns(cols), self._types(cols)])
         return tabulate(table, header = ['i', 'column', 'type'])
 
     def _tabulate_info(self, cols = None):
@@ -223,9 +230,13 @@ class matrix_class():
         return self._tabulate_info()
 
     
-    def __getitem__(self, col):
-        return self.column(col)
-
+    def __getitem__(self, cols):
+        cols = [cols] if isinstance(cols, str) or isinstance(cols, int) else cols 
+        new = matrix_class()
+        for col in cols:
+            new._data.append(self.column(col))
+        new._update_size()
+        return new
 
 
     def equal(self, col, value):
@@ -246,6 +257,10 @@ class matrix_class():
         new._data = [data.subset(rows) for data in self._data]
         new._update_size()
         return new
+
+    def select(self, cols = None):
+        cols = self._correct_cols(cols)
+        return self[cols]
     
     def part(self, start = None, end = None):
         start = 0 if start is None else max(0, start)
@@ -256,8 +271,8 @@ class matrix_class():
         return copy(self)
 
     
-    def simulate_categorical(self, name = None, length = 5, nan_ratio = 0.1):
-        categories = [random_word(5) for i in range(length)]
+    def simulate_categorical(self, name = None, categories = 5, nan_ratio = 0.1):
+        categories = [random_word(5) for i in range(categories)] if isinstance(categories, int) else categories
         data = ['nan' if random.uniform(0, 1) < nan_ratio else random.choice(categories) for el in self._Rows]
         self._add_data(data, name)
 
@@ -275,10 +290,48 @@ class matrix_class():
         data = self.column(col)._data
         self._add_data(data, name)
         self.column(name)._set_type(self.column(col)._type)
+        return self
 
     def delete(self, col):
         index = self._index(col)
         self._data = np.delete(self._data, index)
         self._update_size()
         self._update_indexes()
+        return self
+
+    def sort_values(self, by):
+        cols = [by] if isinstance(by, str) or isinstance(by, int) else by
+        for col in cols:
+            rows = self.column(col).argsort()
+            self.column(col).sort(rows)
+        return self
+
+    def to_pandas(self):
+        import pandas as pd
+        df = pd.DataFrame(self.get_section(), columns = self.columns())
+        return df
+
+    def _get_encoding(self, col1, col2, metric = 'mean', string = False):
+        unique = list(self.unique(col1)); l = len(unique)
+        group = [self.equal(col1, u).column(col2) for u in unique]
+        get_metric = lambda el: el.len() if metric == 'length' else el.sum() if metric == 'sum' else el.std() if metric == 'std' else el.mean() if metric == 'mean' else el
+        values = [get_metric(el) for el in group]
+        to_string = self.column(col1)._to_string
+        values = list(map(to_string, values)) if string else values
+        dictionary =  {unique[i]: values[i] for i in range(l)}
+        return dictionary
+
+    def encode(self, col1, col2, metric = 'mean', string = False):
+        d = self._get_encoding(col1, col2, metric, string)
+        self.to_numerical(col1, d)
+        return self
+
+    def to_pickle(self, path, log = True):
+        import pickle
+        print("writing pickle") if log else None
+        with open(path, 'wb') as f:
+            pickle.dump(self, f)
+        print("pickle written!\n") if log else None
+
+        
         

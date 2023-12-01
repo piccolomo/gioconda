@@ -17,6 +17,7 @@ class data_class():
     def _set_name(self, name = 'none'):
         self._name = name
 
+
     def _set_type(self, type = 'categorical'):
         self._type = type
 
@@ -70,7 +71,7 @@ class data_class():
 
     @mem(maxsize = None)
     def unique(self, nan = True):
-        return np.array(list(self.counts(False, nan).keys()), dtype = self._data.dtype)
+        return np.array(list(self.counts(False, nan).keys()))
 
     def distinct(self, nan = True):
         return len(self.unique(nan))
@@ -80,22 +81,28 @@ class data_class():
         return unique[0] if len(unique) > 0 else nan
 
 
-    def _to_categorical(self):
+    def to_categorical(self):
         self._data = self._to_strings(self._data)
         self._update_length()
         self._set_type('categorical')
         return self
 
-    def _to_numerical(self, dictionary = None):
-        self._data = self._to_numbers(self._data, dictionary)
+    def to_numerical(self, dictionary = None):
+        self._data = self._to_numbers(dictionary)
         self._update_length()
         self._set_type('numerical')
         return self
 
-    def _to_numbers(self, data, dictionary = None):
-        return vectorize(np.float64, data) if dictionary is None else [dictionary[el] for el in data]
+    def _to_numbers(self, dictionary = None):
+        if self.is_datetime():
+            return  np.array([timedelta64_to_number(el, self._delta_form) if not is_nan(el) else nan for el in self._data - self.min()])
+        elif dictionary is None:
+            return np.array([np.float64(el) if not is_nan(el) else nan for el in self._data])
+        else:
+            return np.array([dictionary[el] if not is_nan(el) else nan for el in self._data])
 
-    def _to_datetime(self, form = '%d/%m/%Y', delta_form = 'years'):
+
+    def to_datetime(self, form = '%d/%m/%Y', delta_form = 'years'):
         self._data = strings_to_datetime64(self._data, form)
         self._update_length()
         self._set_type('datetime')
@@ -127,16 +134,21 @@ class data_class():
     
     
     def strip(self):
-        self.apply(lambda string: string.strip()) if self.is_categorical() else print('not categorical')
+        self._apply(lambda string: string.strip()) if self.is_categorical() else print('not categorical')
 
     def replace(self, old, new):
         self._apply(lambda string: string.replace(old, new)) if self.is_categorical() else print('not categorical')
 
-    def apply(self, function):
+    def _apply(self, function):
         data = vectorize(function, self._data)
         self._set_data(data)
 
+    def len(self):
+        return self._rows
 
+    def sum(self):
+        data = self.get_section(nan = False); l = len(data)
+        return nan if l == 0 or self.is_uncountable() else mean_datetime64(data) if self.is_datetime() else np.sum(data)
         
     def min(self, string = False):
         data = self.get_section(nan = False); l = len(data)
@@ -237,7 +249,7 @@ class data_class():
         return np.array([self._to_string(el) for el in data])
 
     def __str__(self):
-        return self._tabulate_info() + nl + sp + self._get_sample_data()
+        return self._tabulate_info() + nl + 0 * sp + self._get_sample_data()
 
     def __repr__(self):
         return str(self)
@@ -281,3 +293,12 @@ class data_class():
         new = self.empty()
         new._set_data(self.get_section(rows))
         return new
+
+    def argsort(self):
+        return np.argsort(self._data)
+
+    def sort(self, rows):
+        self._data = self._data[rows]
+
+    def tolist(self):
+        return self._data.tolist()

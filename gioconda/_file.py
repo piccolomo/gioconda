@@ -1,4 +1,3 @@
-import pickle
 from gioconda._matrix import matrix_class
 from gioconda._data import nl
 import os, sys
@@ -11,7 +10,7 @@ test_data_path = os.path.join(source_folder, 'test_data.csv')
 
 join = os.path.join
 
-def read_lines(path, log = True):
+def _read_lines(path, log = True):
     print("reading text lines in", path) if log else None
     with open(path, 'r', encoding = "utf-8") as file:
         text = file.readlines()
@@ -19,28 +18,22 @@ def read_lines(path, log = True):
     print("text lines read!\n") if log else None
     return text
 
-def split_lines(lines, delimiter = ','):
+def _split_lines(lines, delimiter = ','):
     return [line.replace("\n", "").split(delimiter) for line in lines]
 
 def read(file_name, delimiter = ',', header = False, log = True):
-    "Random Doc"
-    lines = read_lines(file_name, log = log)
+    lines = _read_lines(file_name, log = log)
     print('loading data') if log else None
-    matrix = split_lines(lines, delimiter)
+    matrix = _split_lines(lines, delimiter)
     data = matrix_class()
     data._add_matrix(matrix, header)
     print('data loaded!\n') if log else None
     return data
 
-# def write_pickle(path, object):
-#     print("writing pickle")
-#     with open(path, 'wb') as f:
-#         pickle.dump(object, f)
-#     print("pickle written!\n")
-
-# def read_pickle(path):
-#     print("reading pickle", path)
-#     with open(path, 'rb') as f:
-#         data = pickle.load(f)
-#     print("pickle read!\n")
-#     return data
+def read_pickle(path, log = True):
+    import pickle
+    print("reading pickle", path) if log else None
+    with open(path, 'rb') as f:
+        data = pickle.load(f)
+    print("pickle read!\n") if log else None
+    return data
