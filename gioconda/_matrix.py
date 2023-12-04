@@ -54,7 +54,7 @@ class matrix_class():
     def _indexes(self, cols):
         return vectorize(self._index, cols)
 
-    def _name(self, col):
+    def name(self, col):
         return self.column(col)._name
 
     def rename(self, col, name):
@@ -62,7 +62,7 @@ class matrix_class():
 
     def columns(self, cols = None, index = False):
         cols = self._correct_cols(cols)
-        return [self._name(col) for col in cols]
+        return [self.name(col) for col in cols]
 
     def _correct_cols(self, cols):
         return np.array([col for col in cols if col in self._Cols or col in self.columns()]) if isinstance(cols, list) else self._Cols if cols is None else cols
@@ -134,13 +134,13 @@ class matrix_class():
         return self.column(col).is_uncountable()
     
     def categorical_cols(self):
-        return [self._name(col) for col in self._Cols if self.is_categorical(col)]
+        return [self.name(col) for col in self._Cols if self.is_categorical(col)]
     
     def numerical_cols(self):
-        return [self._name(col) for col in self._Cols if self.is_numerical(col)]
+        return [self.name(col) for col in self._Cols if self.is_numerical(col)]
     
     def countable_cols(self):
-        return [self._name(col) for col in self._Cols if self.is_countable(col)]
+        return [self.name(col) for col in self._Cols if self.is_countable(col)]
 
 
     def strip(self, cols = None):
@@ -150,6 +150,9 @@ class matrix_class():
     def replace(self, old, new, cols = None):
         cols = self._correct_cols(cols)
         [self.column(col).replace(old, new) for col in cols]
+
+    def replace_nan(self, col, metric = 'mean'):
+        self.column(col).replace_nan(metric)
 
 
     def numerical_info(self):
@@ -167,18 +170,31 @@ class matrix_class():
         cols = [col for col in cols if self.is_categorical(col)]
         [self.column(col)._print_counts(norm = norm, length = length) for col in cols]
 
+    def get_metric(self, col, metric = 'mean'):
+        return self.column(col).get_metric(metric)
+
+    def _numerical_cross_counts(self, col1, col2, metric = 'mean', length = 10):
+        bins = get_bins(self.column(col1).min(), self.column(col1).max(), length)
+        bins = [self.higher(col1, b[0], 1).lower(col1, b[1], 0) for b in bins]
+        count1 = [b.get_metric(col1, 'mean') for b in bins]
+        count2 = [b.get_metric(col2, metric) for b in bins]
+        header = [self.name(col1) + ' mean', self.name(col2) + ' ' + metric]
+        table = tabulate(np.transpose([count1, count2]), header, decimals = 1)
+        print(table)
+        
+
     def _categorical_cross_counts(self, col1, col2, norm = False, length = 10):
         unique1 = list(self.unique(col1))[:length]; unique2 = list(self.unique(col2))[:length]
         counts = [[self._cross_count(col1, col2, u1, u2, norm = norm) for u2 in unique2] for u1 in unique1]
         table = [[unique1[i]] + counts[i] for i in range(len(counts))]
-        header = [self._name(col1) + ' / ' + self._name(col2)] + unique2
+        header = [self.name(col1) + ' / ' + self.name(col2)] + unique2
         table = tabulate(table, header = header, decimals = 1)
         print(table)
 
     def _mixed_cross_counts(self, col1, col2, metric = 'mean', length = 10):
         unique = list(self.unique(col1))[ : length];
         value = list(self._get_encoding(col1, col2, metric, 1).values()) [ : length]
-        name = self._name(col1) + ' / ' + self._name(col2)
+        name = self.name(col1) + ' / ' + self.name(col2)
         header = ['unique', metric]
         table = np.transpose([unique, value])
         table = tabulate(table, header = header, decimals = 1)
@@ -186,14 +202,14 @@ class matrix_class():
 
     def tab(self, col1, col2, norm = False, metric = 'mean', length = 30):
         if self.is_non_categorical(col1) and self.is_non_categorical(col2):
-            print('Warning: At least one column should be categorical')
+            self._numerical_cross_counts(col1, col2, metric, length)
         elif self.is_categorical(col1) and self.is_categorical(col2):
-            return self._categorical_cross_counts(col1, col2, norm = norm, length = length)
+            self._categorical_cross_counts(col1, col2, norm = norm, length = length)
         elif self.is_categorical(col1) and self.is_non_categorical(col2):
-            return self._mixed_cross_counts(col1, col2, metric, length)
+            self._mixed_cross_counts(col1, col2, metric, length)
         else:
             print('Warning: Columns switched')
-            return self._mixed_cross_counts(col2, col1, metric, length)
+            self._mixed_cross_counts(col2, col1, metric, length)
         
     def plot(self, col, bins = 100):
         self.column(col).plot(bins)
@@ -201,7 +217,7 @@ class matrix_class():
     def cross_plot(self, col1, col2):
         plt.figure(0, figsize = (15, 8)); plt.clf()
         plt.scatter(self.column(col1).get_section(nan = True), self.column(col2).get_section(nan = True))
-        plt.xlabel(self._name(col1)); plt.ylabel(self._name(col2))
+        plt.xlabel(self.name(col1)); plt.ylabel(self.name(col2))
         plt.xticks(rotation = 90) if self.is_categorical(col1) else None
         plt.tight_layout(); plt.pause(0.1); plt.show(block = 1); plt.clf(); plt.close()
 
@@ -245,8 +261,8 @@ class matrix_class():
     def not_equal(self, col, value):
         return self.subset(self.column(col).not_equal(value))
     
-    def greater(self, col, value, equal = True):
-        return self.subset(self.column(col).greater(value, equal))
+    def higher(self, col, value, equal = True):
+        return self.subset(self.column(col).higher(value, equal))
 
     def lower(self, col, value, equal = True):
         return self.subset(self.column(col).lower(value, equal))

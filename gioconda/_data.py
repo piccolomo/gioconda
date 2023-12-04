@@ -137,7 +137,12 @@ class data_class():
         self._apply(lambda string: string.strip()) if self.is_categorical() else print('not categorical')
 
     def replace(self, old, new):
-        self._apply(lambda string: string.replace(old, new)) if self.is_categorical() else print('not categorical')
+        self._apply(lambda string: string.replace(old, new)) if self.is_categorical() else self._apply(lambda el: new if el == old else el)
+
+    def replace_nan(self, metric = 'mean'):
+        new = self.get_metric(metric)
+        self._data = np.array([new if isnan(el) else el for el in self._data])
+        self.numerical_info.cache_clear()
 
     def _apply(self, function):
         data = vectorize(function, self._data)
@@ -182,6 +187,9 @@ class data_class():
         data = self.get_section(nan = False); l = len(data)
         return nan if l == 0 or self.is_uncountable() else median_datetime64(data) if self.is_datetime() else np.median(data)
 
+    def get_metric(self, metric = 'mean'):
+        return self.min() if metric == 'min' else self.max() if metric == 'max' else self.mean() if metric == 'mean' else self.sum() if metric == 'sum' else self._rows if metric == 'length' else None
+
     def _get_numerical_data(self):
         data = self.get_section(nan = False)
         data = [el.item().timestamp() for el in data] if self.is_datetime() else data
@@ -206,7 +214,7 @@ class data_class():
 
     @mem(maxsize=None)
     def numerical_info(self):
-        info = {'min': self.min(), 'max': self.max(), 'span': self.span(), 'nan': self.count_nan(1), 'mean': self.mean(), 'median': self.median(), 'mode': self.mode(), 'std': self.std(), 'density': self.density()}
+        info = {'min': self.min(), 'max': self.max(), 'span': self.span(), 'nan': self.count_nan(0), 'mean': self.mean(), 'median': self.median(), 'mode': self.mode(), 'std': self.std(), 'density': self.density()}
         return {k : self._to_string(info[k]) for k in info.keys()}
     
     def info(self):

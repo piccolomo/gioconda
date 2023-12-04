@@ -24,6 +24,12 @@ are_not_nan = lambda data: np.array([not is_nan(el) for el in data], dtype = np.
 #transpose = lambda data: list(map(list, zip(*data)))
 vectorize = lambda method, data: np.vectorize(method)(data) if len(data) > 0 else np.array([])
 
+def get_bins(a, b, bins = 10):
+    width = (b - a) / (bins - 1)
+    edge = np.linspace(a - width / 2, b + width / 2, bins + 1)
+    return [[edge[i], edge[i + 1]] for i in range(bins)]
+    
+
 # String
 sp = ' '
 vline = '│'
