@@ -1,10 +1,12 @@
 from functools import lru_cache as mem
 from copy import deepcopy as copy
-from math import isnan
+import math
 import random, string
 import datetime as dt
 import numpy as np
 import shutil
+from scipy.interpolate import interp1d
+
 #from matplotlib import pyplot as plt
 
 # System
@@ -15,19 +17,45 @@ th = lambda: shutil.get_terminal_size()[1]
 nan = np.nan
 nat = np.datetime64('NaT')
 
-is_nan = lambda el: el is None or (isinstance(el, str) and el == 'nan') or (is_number(el) and isnan(el)) or (isinstance(el, np.datetime64) and np.isnan(el)) or (isinstance(el, np.timedelta64) and np.isnan(el))
+is_nan = lambda el: el is None or (isinstance(el, str) and el == 'nan') or (is_number(el) and math.isnan(el)) or (isinstance(el, np.datetime64) and np.isnan(el)) or (isinstance(el, np.timedelta64) and np.isnan(el))
 is_number = lambda el: isinstance(el, float) or isinstance(el, int)
 are_nan = lambda data: np.array([is_nan(el) for el in data], dtype = np.bool_)
 are_not_nan = lambda data: np.array([not is_nan(el) for el in data], dtype = np.bool_)
+
+def remove_nan(x, y):
+    a = np.transpose([x, y])
+    a = a[~np.array([any(np.isnan(el)) for el in a])]
+    return np.transpose(a)
 
 # Data
 #transpose = lambda data: list(map(list, zip(*data)))
 vectorize = lambda method, data: np.vectorize(method)(data) if len(data) > 0 else np.array([])
 
+def ordering(data):
+    # data_sorted = sorted(data)
+    # return [data_sorted.index(el) for el in data]
+    return np.argsort(data)
+
 def get_bins(a, b, bins = 10):
     width = (b - a) / (bins - 1)
     edge = np.linspace(a - width / 2, b + width / 2, bins + 1)
     return [[edge[i], edge[i + 1]] for i in range(bins)]
+    
+def smooth(x, y, length = 100, window = 3):
+    l, m, M = len(x), np.min(x), np.max(x); s = M - m; window = 4 * s / length
+    points = round(l / length)
+    points = 10
+    print('length', length)
+    print('window', window)
+    print('point', points)
+    def indices(x0):
+        distances = np.abs(x - x0)
+        firsts = np.unique(np.sort(distances))[ : points]
+        return (distances <= window) | np.isin(distances, firsts)
+    average = lambda x0: np.mean(y[indices(x0)])
+    xn = np.linspace(m, M, length)
+    yn = np.array([average(x0) for x0 in xn])
+    return xn, yn
     
 
 # String
@@ -92,13 +120,15 @@ forms = ['seconds', 'minutes', 'hours', 'days', 'months', 'years']
 time_to_string = lambda date, form: date.strftime(form)
 
 def timedelta64_to_number(delta, delta_form):
+    if is_nan(delta):
+        return np.nan
     #delta = delta.item().timestamp()
     delta = delta.item().total_seconds()
     index = forms.index(delta_form)
     return delta / div[index]
 
 def timedelta64_to_numbers(data, form):
-    return vectorize(lambda delta: timedelta64_to_number(delta, form), data)
+    return np.array([timedelta64_to_number(el, form) for el in data])
     
 
 timedelta64_to_string = lambda delta, form: str(round(timedelta64_to_number(delta, form), 1))

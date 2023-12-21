@@ -1,6 +1,6 @@
 from gioconda._methods import *
 from matplotlib import pyplot as plt
-
+from random import sample
 
 class data_class():
     def __init__(self, data = [], name = '', index = 'none'):
@@ -16,6 +16,10 @@ class data_class():
 
     def _set_name(self, name = 'none'):
         self._name = name
+
+    def rename(self, name):
+        self._set_name(name)
+        return self
 
 
     def _set_type(self, type = 'categorical'):
@@ -40,16 +44,18 @@ class data_class():
 
     def get_section(self, rows = None, nan = True, string = False):
         rows = self._correct_rows(rows)
-        data = self._data[rows]
+        data = self._data[rows] if len(rows) > 0 else np.array([])
         data = data if nan else data[are_not_nan(data)]
         data = self._to_strings(data) if string else data
         return data
     
-    def _correct_rows(self, rows):
-        return np.array([row for row in rows if row in self._Rows]) if isinstance(rows, list) else self._Rows if rows is None else rows
-    
+    def _correct_rows(self, rows = None):
+        rows = self._Rows if rows is None else np.array(rows)
+        rows = np.array([r for r in self._Rows[:len(rows)] if rows[r]]) if rows.dtype == np.bool_ else rows
+        rows =  rows[rows < self._rows]
+        return rows
 
-    @mem(maxsize = None)
+    #@mem(maxsize = None)
     def counts(self, norm = False, nan = True):
         u, v = np.unique(self._data, return_counts = 1)
         nans = are_nan(u)
@@ -69,15 +75,15 @@ class data_class():
         c = np.count_nonzero(are_nan(self._data))
         return nan if self._rows == 0 else 100 * c / self._rows if norm else c
 
-    @mem(maxsize = None)
+    #@mem
     def unique(self, nan = True):
-        return np.array(list(self.counts(False, nan).keys()))
+        return list(self.counts(False, nan).keys())
 
     def distinct(self, nan = True):
         return len(self.unique(nan))
 
     def mode(self):
-        unique = self.unique()
+        unique = self.unique(0)
         return unique[0] if len(unique) > 0 else nan
 
 
@@ -99,7 +105,7 @@ class data_class():
         elif dictionary is None:
             return np.array([np.float64(el) if not is_nan(el) else nan for el in self._data])
         else:
-            return np.array([dictionary[el] if not is_nan(el) else nan for el in self._data])
+            return np.array([dictionary[el] if el in dictionary and not is_nan(el) else nan for el in self._data])
 
 
     def to_datetime(self, form = '%d/%m/%Y', delta_form = 'years'):
@@ -140,9 +146,9 @@ class data_class():
         self._apply(lambda string: string.replace(old, new)) if self.is_categorical() else self._apply(lambda el: new if el == old else el)
 
     def replace_nan(self, metric = 'mean'):
-        new = self.get_metric(metric)
-        self._data = np.array([new if isnan(el) else el for el in self._data])
-        self.numerical_info.cache_clear()
+        new = self.mode() if self.is_categorical() else self.get_metric(metric) if isinstance(metric, str) else metric
+        self._data = np.array([new if is_nan(el) else el for el in self._data])
+        self._clear()
 
     def _apply(self, function):
         data = vectorize(function, self._data)
@@ -169,15 +175,22 @@ class data_class():
         m, M = self.min(), self.max()
         s = M - m
         return s if not self.is_datetime() else s
-    
+
+    def max_diff(self):
+        data = self.get_section(nan = False); l = len(data)
+        data = np.diff(np.sort(data))
+        data = data[np.nonzero(data)]
+        m = nan if l == 0 or self.is_uncountable() else np.max(data)
+        return m
+
     def std(self):
         data = self.get_section(nan = False); l = len(data)
         return nan if l == 0 or self.is_uncountable() else std_datetime64(data) if self.is_datetime() else np.std(data)
     
     def density(self):
-        std = self.std().item().total_seconds() if self.is_datetime() else self.std()
-        span = self.span().item().total_seconds() if self.is_datetime() else self.span()
-        return 100 * std / span if span != 0 else np.inf
+        std = 'nan' if is_nan(self.std()) else self.std().item().total_seconds() if self.is_datetime() else self.std()
+        span = 'nan' if is_nan(self.span()) else  self.span().item().total_seconds() if self.is_datetime() else self.span()
+        return 'nan' if is_nan(std) or is_nan(span) else 100 * std / span if span != 0 else np.inf
 
     def mean(self):
         data = self.get_section(nan = False); l = len(data)
@@ -188,12 +201,17 @@ class data_class():
         return nan if l == 0 or self.is_uncountable() else median_datetime64(data) if self.is_datetime() else np.median(data)
 
     def get_metric(self, metric = 'mean'):
-        return self.min() if metric == 'min' else self.max() if metric == 'max' else self.mean() if metric == 'mean' else self.sum() if metric == 'sum' else self._rows if metric == 'length' else None
+        metrics = ['min', 'max', 'mean', 'sum', 'length', 'mode', 'median', 'std']
+        functions = [self.min, self.max, self.mean, self.sum, self.__len__, self.mode, self.median, self.std]
+        return functions[metrics.index(metric)]()
 
     def _get_numerical_data(self):
         data = self.get_section(nan = False)
         data = [el.item().timestamp() for el in data] if self.is_datetime() else data
         return data if self.is_countable() else []
+
+    def _get_max_bins(self):
+        return int(np.ceil(self.span() / self.max_diff()))
     
     def multiply(self, k):
         self._set_data(k * self._data) if self.is_numerical() else print('not numerical')
@@ -216,10 +234,15 @@ class data_class():
     def numerical_info(self):
         info = {'min': self.min(), 'max': self.max(), 'span': self.span(), 'nan': self.count_nan(0), 'mean': self.mean(), 'median': self.median(), 'mode': self.mode(), 'std': self.std(), 'density': self.density()}
         return {k : self._to_string(info[k]) for k in info.keys()}
+
+    def datetime_info(self):
+        return {'form': self._form, 'delta_form': self._delta_form}
+    
     
     def info(self):
         info = self._basic_info()
         info.update(self.numerical_info()) if self.is_countable() else None
+        info.update(self.datetime_info()) if self.is_datetime() else None
         return info
 
     def plot(self, bins = 100):
@@ -264,22 +287,43 @@ class data_class():
 
     def __getitem__(self, row):
         return self._data[row]
+    
+    def __setitem__(self, rows, value):
+        rows = np.array(rows)
+        rows = [r for r in self._Rows if rows[r]] if rows.dtype == np.bool_ else rows
+        for r in rows:
+            self._data[r] = value
+        self._clear()
 
+    def _clear(self):
+        self.numerical_info.cache_clear()
 
+    def bins(self, bins = 10):
+        bins = get_bins(self.min(), self.max(), bins)
+        return [self.between(b[0], b[1]) for b in bins]
+
+        
+        
         
 
     def equal(self, value):
-        data = self.get_section(string = 1) if isinstance(value, str) and self.is_datetime() else self._data
-        return are_nan(self._data) if is_nan(value) else self._data == value
+        value = string_to_datetime64(value, self._form) if isinstance(value, str) and self.is_datetime() else value
+        rows = are_nan(self._data) if is_nan(value) else self._data == value
+        #rows = [r for r in self._Rows if rows[r]]
+        return rows
 
     def not_equal(self, value):
-        return ~ self.equal(value)
+        return ~self.equal(value)
 
     def higher(self, value, equal = False):
+        value = string_to_datetime64(value, self._form) if isinstance(value, str) and self.is_datetime() else value
         return self._data >= value if equal else self._data > value
 
     def lower(self, value, equal = False):
         return ~self.higher(value, not equal)
+
+    def between(self, start, end, equal1 = True, equal2 = False):
+        return self.higher(start, equal1) & self.lower(end, equal2)
 
 
     def copy(self):
@@ -297,7 +341,7 @@ class data_class():
         b = self._rows if b is None else b
         return self.subset(np.arange(a, b))
     
-    def subset(self, rows):
+    def select(self, rows):
         new = self.empty()
         new._set_data(self.get_section(rows))
         return new
@@ -310,3 +354,77 @@ class data_class():
 
     def tolist(self):
         return self._data.tolist()
+
+    def div(self, k):
+        new = self.copy()
+        new._data /= k
+        new._clear()
+        new.rename(self._name + ' / ' + str(k))
+        return new
+
+    def divide(self, other):
+        new = self.copy()
+        new._data /= other._data
+        new._clear()
+        new.rename(self._name + ' / ' + other._name)
+        return new
+
+    def sub(self, k):
+        data = self._data - k
+        new = data_class(data, self._name)
+        new._set_type('numerical')
+        new._set_name('(' + self._name + ' - ' + str(k) + ')')
+        return new
+
+    def add(self, k):
+        data = self._data + k
+        new = data_class(data, self._name)
+        new._set_type('numerical')
+        new._set_name('(' + self._name + ' + ' + str(k) + ')')
+        return new
+
+    def subtract(self, other):
+        data = self._data  - other._data
+        data = timedelta64_to_numbers(data, self._delta_form) if self.is_datetime() else data
+        new = data_class(data, self._name)
+        new._set_type('numerical')
+        new._set_name('(' + self._name + ' - ' + other._name + ')')
+        return new
+
+    def power(self, p):
+        data = self._data ** p
+        new = data_class(data, self._name)
+        new._set_type('numerical')
+        new._set_name('(' + self._name + '^' + str(p) + ')')
+        return new
+
+    def set(self, other):
+        self._data = other._data
+        self._name = self._name
+        self._type = self._type
+        self._clear()
+
+    def order(self):
+        return ordering(self._data)
+
+    def __eq__(self, col):
+        return self._data == col._data
+
+    def __lt__(self, col):
+        return self._data < col._data
+
+    def __gt__(self, col):
+        return self._data > col._data
+
+    def __le__(self, col):
+        return self._data <= col._data
+
+    def __ge__(self, col):
+        return self._data >= col._data
+
+    def __hash__(self):
+        return hash(tuple(self._data))
+
+    def __len__(self):
+        return self._rows
+
