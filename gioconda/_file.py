@@ -47,7 +47,7 @@ def _read_xlsx(path, log = True):
         line = []
         for cell in row:
             el = cell.value
-            el = el.strftime('%d-%m-%Y') if isinstance(el, datetime) else str(el)
+            el = el.strftime('%d/%m/%Y') if isinstance(el, datetime) else str(el)
             line.append(el)
         matrix.append(line)
     workbook.close()
