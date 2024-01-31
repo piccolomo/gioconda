@@ -1,6 +1,9 @@
 from gioconda._methods import *
 from matplotlib import pyplot as plt
 from random import sample
+from sklearn.preprocessing import StandardScaler as ss
+
+metrics = ['min', 'max', 'mean', 'sum', 'length', 'mode', 'median', 'std']
 
 class data_class():
     def __init__(self, data = [], name = '', index = 'none'):
@@ -12,6 +15,7 @@ class data_class():
 
     def _set_data(self, data = []):
         self._data = np.array(data)
+        self._order = self._data.argsort()
         self._update_length()
 
     def _set_name(self, name = 'none'):
@@ -105,7 +109,8 @@ class data_class():
         elif dictionary is None:
             return np.array([np.float64(el) if not is_nan(el) else nan for el in self._data])
         else:
-            return np.array([dictionary[el] if el in dictionary and not is_nan(el) else nan for el in self._data])
+            #return np.array([dictionary[el] if el in dictionary and not is_nan(el) else nan for el in self._data])
+            return np.array([dictionary[el] if el in dictionary else el for el in self._data])
 
 
     def to_datetime(self, form = '%d/%m/%Y', delta_form = 'years'):
@@ -146,7 +151,7 @@ class data_class():
         self._apply(lambda string: string.replace(old, new)) if self.is_categorical() else self._apply(lambda el: new if el == old else el)
 
     def replace_nan(self, metric = 'mean'):
-        new = self.mode() if self.is_categorical() else self.get_metric(metric) if isinstance(metric, str) else metric
+        new = self.mode() if self.is_categorical() else self.get_metric(metric) if isinstance(metric, str) and metric in metrics else (string_to_datetime64(metric, self._form) if self.is_datetime() else metric)
         self._data = np.array([new if is_nan(el) else el for el in self._data])
         self._clear()
 
@@ -177,9 +182,10 @@ class data_class():
         return s if not self.is_datetime() else s
 
     def max_diff(self):
-        data = self.get_section(nan = False); l = len(data)
+        data = self.get_section(nan = False); 
         data = np.diff(np.sort(data))
         data = data[np.nonzero(data)]
+        l = len(data)
         m = nan if l == 0 or self.is_uncountable() else np.max(data)
         return m
 
@@ -200,10 +206,17 @@ class data_class():
         data = self.get_section(nan = False); l = len(data)
         return nan if l == 0 or self.is_uncountable() else median_datetime64(data) if self.is_datetime() else np.median(data)
 
-    def get_metric(self, metric = 'mean'):
-        metrics = ['min', 'max', 'mean', 'sum', 'length', 'mode', 'median', 'std']
+    def percentile(self, q):
+        data = self.get_section(nan = False); l = len(data)
+        return nan if l == 0 or self.is_uncountable() else np.percentile(data, q)
+
+    def iqr(self):
+        return self.percentile(74) - self.percentile(25)
+
+    def get_metric(self, metric = 'mean', string = False):
         functions = [self.min, self.max, self.mean, self.sum, self.__len__, self.mode, self.median, self.std]
-        return functions[metrics.index(metric)]()
+        res = functions[metrics.index(metric)]()
+        return self._to_string(res) if string else res 
 
     def _get_numerical_data(self):
         data = self.get_section(nan = False)
@@ -211,28 +224,31 @@ class data_class():
         return data if self.is_countable() else []
 
     def _get_max_bins(self):
-        return int(np.ceil(self.span() / self.max_diff()))
+        s = self.span()
+        m = self.max_diff()
+        return 2 if is_nan(s) or is_nan(m) else max(2, int(np.ceil(s / m)))
     
     def multiply(self, k):
         self._set_data(k * self._data) if self.is_numerical() else print('not numerical')
         
 
-    def _tabulate_counts(self, norm = False, length = 10):
+    def _tabulate_counts(self, norm = False, nan = True, length = 10):
         header = [self._name, 'count']
-        counts = list(self.counts(norm = norm).items())[: length]
+        counts = list(self.counts(norm = norm, nan = nan).items())
+        counts = sorted(counts, key = lambda el: el[1], reverse = 1)[: length]
         table = tabulate(counts, header = header) + nl
         return table
 
-    def _print_counts(self, norm = False, length = 10):
-        print(self._tabulate_counts(norm, length))
+    def _print_counts(self, norm = False, nan = True, length = 10):
+        print(self._tabulate_counts(norm, nan, length))
         
-    @mem(maxsize = None)
+    #@mem(maxsize = None)
     def _basic_info(self):
-        return {'name': self._name, 'index': self._index, 'type': self._type, 'rows': self._rows, 'nan': self.count_nan(), 'unique': self.distinct(nan=False)}
+        return {'name': self._name, 'index': self._index, 'type': self._type, 'rows': self._rows, 'nan': self.count_nan(), 'unique': self.distinct(nan = False)}
 
-    @mem(maxsize=None)
+    #@mem(maxsize=None)
     def numerical_info(self):
-        info = {'min': self.min(), 'max': self.max(), 'span': self.span(), 'nan': self.count_nan(0), 'mean': self.mean(), 'median': self.median(), 'mode': self.mode(), 'std': self.std(), 'density': self.density()}
+        info = {'min': self.min(), 'max': self.max(), 'span': self.span(), 'nan': self.count_nan(0), 'mean': self.mean(), 'median': self.median(), 'mode': self.mode(), 'std': self.std(), 'iqr': self.iqr(), 'density': self.density()}
         return {k : self._to_string(info[k]) for k in info.keys()}
 
     def datetime_info(self):
@@ -291,39 +307,45 @@ class data_class():
     def __setitem__(self, rows, value):
         rows = np.array(rows)
         rows = [r for r in self._Rows if rows[r]] if rows.dtype == np.bool_ else rows
+        value = value._data if isinstance(value, data_class) else value if isinstance(value, list) or isinstance(value, np.ndarray) else [value] * self._rows
         for r in rows:
-            self._data[r] = value
+            self._data[r] = value[r]
         self._clear()
 
     def _clear(self):
-        self.numerical_info.cache_clear()
+        pass
+        #self.numerical_info.cache_clear()
 
     def bins(self, bins = 10):
         bins = get_bins(self.min(), self.max(), bins)
         return [self.between(b[0], b[1]) for b in bins]
 
-        
-        
-        
 
     def equal(self, value):
-        value = string_to_datetime64(value, self._form) if isinstance(value, str) and self.is_datetime() else value
+        value = self._correct_value(value)
         rows = are_nan(self._data) if is_nan(value) else self._data == value
         #rows = [r for r in self._Rows if rows[r]]
         return rows
 
     def not_equal(self, value):
-        return ~self.equal(value)
+        value = self._correct_value(value)
+        rows = not are_nan(self._data) if is_nan(value) else self._data != value
+        #rows = [r for r in self._Rows if rows[r]]
+        return rows
 
     def higher(self, value, equal = False):
-        value = string_to_datetime64(value, self._form) if isinstance(value, str) and self.is_datetime() else value
+        value = self._correct_value(value)
         return self._data >= value if equal else self._data > value
 
     def lower(self, value, equal = False):
-        return ~self.higher(value, not equal)
+        value = self._correct_value(value)
+        return self._data <= value if equal else self._data < value
 
     def between(self, start, end, equal1 = True, equal2 = False):
         return self.higher(start, equal1) & self.lower(end, equal2)
+
+    def _correct_value(self, value):
+        return string_to_datetime64(value, self._form) if isinstance(value, str) and self.is_datetime() else value
 
 
     def copy(self):
@@ -371,6 +393,7 @@ class data_class():
 
     def sub(self, k):
         data = self._data - k
+        data = timedelta64_to_numbers(data, self._delta_form) if self.is_datetime() else data
         new = data_class(data, self._name)
         new._set_type('numerical')
         new._set_name('(' + self._name + ' - ' + str(k) + ')')
@@ -391,6 +414,11 @@ class data_class():
         new._set_name('(' + self._name + ' - ' + other._name + ')')
         return new
 
+    def invert(self):
+        new = self.copy()
+        new._data *= -1
+        return new
+
     def power(self, p):
         data = self._data ** p
         new = data_class(data, self._name)
@@ -403,9 +431,23 @@ class data_class():
         self._name = self._name
         self._type = self._type
         self._clear()
+        
 
     def order(self):
         return ordering(self._data)
+
+    def rescale(self, method = 'std'):
+        if method == 'std':
+            self._data = (self._data - self.mean()) / self.std()
+        elif method == 'span':
+            self._data = (self._data - self.min()) / self.span()
+        elif method == 'robust':
+            if self.iqr() == 0:
+                print(self._name, 'rescaled with span method')
+                self.rescale('span')
+            else:
+                self._data = (self._data - self.median()) / self.iqr()
+
 
     def __eq__(self, col):
         return self._data == col._data
@@ -427,4 +469,17 @@ class data_class():
 
     def __len__(self):
         return self._rows
+
+    def find(self, pos):
+        arg_pos = np.where(self._order == pos)[0][0]
+        indexes = [self._order[i] for i in range(max(0, arg_pos - 5), min(arg_pos + 5, self._rows))]
+        indexes.remove(pos)
+        return indexes
+        # a = self._data[i]
+        # b = self._data[j]
+        # return nan if is_nan(a) or is_nan(b) else int(a == b) if self.is_categorical() else timedelta64_to_number(abs(a - b), self._delta_form) if self.is_datetime() else abs(a - b)
+
+    # def standard_scale(self):
+    #     data = self._data.reshape(-1, 1)
+    #     self._data = ss().fit(data).transform(data).reshape(-1)
 

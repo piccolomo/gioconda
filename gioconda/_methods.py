@@ -37,17 +37,24 @@ def ordering(data):
     return np.argsort(data)
 
 def get_bins(a, b, bins = 10):
-    width = (b - a) / (bins - 1)
-    edge = np.linspace(a - width / 2, b + width / 2, bins + 1)
-    return [[edge[i], edge[i + 1]] for i in range(bins)]
+    width = (b - a) / (bins - 1) if b != a else 1 
+    start, end = a - width / 2, b + width / 2
+    edge = linspace(start, end, bins + 1)
     
+    return [[edge[i], edge[i + 1]] for i in range(bins)]
+
+def linspace(start, end, points):
+    bins = points - 1
+    delta = (end - start) / bins
+    return np.arange(start, end + delta, delta) if delta != 0 else [start, end]
+
 def smooth(x, y, length = 100, window = 3):
     l, m, M = len(x), np.min(x), np.max(x); s = M - m; window = 4 * s / length
     points = round(l / length)
     points = 10
     print('length', length)
     print('window', window)
-    print('point', points)
+    print('points', points)
     def indices(x0):
         distances = np.abs(x - x0)
         firsts = np.unique(np.sort(distances))[ : points]
