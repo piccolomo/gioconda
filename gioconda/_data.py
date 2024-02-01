@@ -329,9 +329,15 @@ class data_class():
 
     def not_equal(self, value):
         value = self._correct_value(value)
-        rows = not are_nan(self._data) if is_nan(value) else self._data != value
+        rows = ~ are_nan(self._data) if is_nan(value) else self._data != value
         #rows = [r for r in self._Rows if rows[r]]
         return rows
+
+    def is_nan(self):
+        return are_nan(self._data)
+    
+    def is_not_nan(self):
+        return are_not_nan(self._data)
 
     def higher(self, value, equal = False):
         value = self._correct_value(value)

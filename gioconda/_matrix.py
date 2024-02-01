@@ -309,6 +309,12 @@ class matrix_class():
 
     def not_equal(self, col, value):
         return self.column(col).not_equal(value)
+
+    def is_nan(self, col):
+        return self.column(col).is_nan()
+    
+    def is_not_nan(self, col):
+        return self.column(col).is_not_nan()
     
     def higher(self, col, value, equal = True):
         return self.column(col).higher(value, equal)

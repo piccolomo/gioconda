@@ -21,6 +21,7 @@ setup(
     packages = find_packages(),
     python_requires = ">=3.10.0, <=3.11.4",
     include_package_data = True,
-    install_requires = ["numpy >= 1.24.0", "matplotlib >= 3.7.0"],
+    install_requires = [],
+    #install_requires = ["numpy >= 1.24.0", "matplotlib >= 3.7.0"],
     classifiers = []
     )
