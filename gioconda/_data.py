@@ -433,11 +433,13 @@ class data_class():
         return new
 
     def set(self, other):
-        self._data = other._data
+        self.set_data(other._data)
         self._name = self._name
         self._type = self._type
         self._clear()
-        
+
+    def set_data(self, data):
+        self._data = np.array(data)
 
     def order(self):
         return ordering(self._data)

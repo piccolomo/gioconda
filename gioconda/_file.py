@@ -16,7 +16,7 @@ def _read_text(path, log = True):
     print("reading text lines in", path) if log else None
     with open(path, 'r', encoding = "utf-8") as file:
         text = file.readlines()
-    text = [line for line in text if line != nl]
+    text = [line.replace('\ufeff', '') for line in text if line != nl]
     print("text lines read!\n") if log else None
     return text
 
