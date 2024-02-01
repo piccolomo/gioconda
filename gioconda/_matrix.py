@@ -1,5 +1,6 @@
 from gioconda._data import *
 from gioconda._methods import *
+from gioconda._file import write_text
 
 
 class matrix_class():
@@ -441,3 +442,10 @@ class matrix_class():
 
     def __len__(self):
         return self._rows
+
+    def save(self, path, delimiter = ',', header = True, log = True):
+        text = '\n'.join([delimiter.join(row) for row in self.get_section()])
+        header = delimiter.join(self.columns()) + '\n' if header else ''
+        text = header + text
+        write_text(path, text, log)
+        return self
