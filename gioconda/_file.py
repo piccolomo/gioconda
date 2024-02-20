@@ -11,7 +11,7 @@ def read_text(path, log = True):
     with open(path, 'r', encoding = "utf-8") as file:
         text = file.readlines()
     text = [line.replace('\ufeff', '') for line in text if line != nl]
-    print("text lines read!\n") if log else None
+    print("text lines read!") if log else None
     return text
 
 def split_lines(lines, delimiter = ','):
@@ -42,5 +42,5 @@ def write_text(path, text, log = True):
     file = open(path, "w")
     file.write(text)
     file.close()
-    print("text written.\n") if log else None
+    print("text written.") if log else None
 

@@ -17,6 +17,7 @@ class matrix_class():
         matrix = matrix[1:] if header else matrix
         data = np.transpose(matrix)
         [self.add_data(data[i], columns[i]) for i in range(cols)]
+        return self
         #self._update_attributes()
 
     def add_data(self, data, name = None):
@@ -43,7 +44,7 @@ class matrix_class():
     def _update_size(self):
         self._set_columns(len(self._data))
         self.set_rows(self.column(0)._rows if self._columns > 0 else 0)
-        
+
 
     def set_rows(self, rows):
         self._rows = rows
@@ -73,7 +74,7 @@ class matrix_class():
         return self._data[col] if col is not None else None
 
     def column_index(self, col):
-        return self.columns().index(col) if isinstance(col, str) and col in self.columns() else col if isinstance(col, int) and col in self._Columns else None
+        return  self._columns_names.index(col) if isinstance(col, str) and col in self._columns_names else col if isinstance(col, int) and col in self._Columns else None
 
     def columns_indexes(self, cols):
         return vectorize(self.column_index, cols)
@@ -88,12 +89,16 @@ class matrix_class():
         setattr(self, name, self.column(name))
 
     def columns(self, cols = None, index = False):
-        cols = self._correct_columns(cols)
+        cols = self.columns_indexes(self._correct_columns(cols))
         index_col = ['index'] if index else []
         return index_col + [self._columns_names[col] for col in cols if col < self._columns]
 
+    def _correct_column(self, col):
+        return self.column_name(col) if col in self._Columns or col in self.columns() else None
+
     def _correct_columns(self, cols):
-        return [col for col in cols if col in self._Columns or col in self.columns()] if isinstance(cols, list) or isinstance(cols, np.ndarray) else self._Columns if cols is None else [cols]
+        cols = self._Columns if cols is None else cols
+        return [self._correct_column(col) for col in cols] if isinstance(cols, list) or isinstance(cols, np.ndarray) else [self._correct_column(cols)]
 
     def _type(self, col):
         return self.column(col)._type
@@ -101,6 +106,12 @@ class matrix_class():
     def _types(self, cols = None):
         cols = self._correct_columns(cols)
         return [self.column(col)._type for col in cols]
+
+    def set_nans(self, nans = ['nan'], cols = None):
+        cols = self._correct_columns(cols)
+        [self.column(col).set_nans(nans) for col in cols]
+        return self
+
 
     
     def get_section(self, rows = None, cols = None, nan = True, string = False, index = False):
@@ -177,7 +188,11 @@ class matrix_class():
         cols = self._correct_columns(cols)
         [self.column(col).strip() for col in cols]
 
-    def replace(self, old, new, cols = None):
+    def replace_string(self, cols, old, new):
+        cols = self._correct_columns(cols)
+        [self.column(col).replace_string(old, new) for col in cols]
+
+    def replace(self, cols, old, new):
         cols = self._correct_columns(cols)
         [self.column(col).replace(old, new) for col in cols]
 
@@ -188,8 +203,9 @@ class matrix_class():
         return new
 
 
-    def numerical_info(self):
-        cols = self.countable_columns()
+    def numerical_info(self, cols = None):
+        cols = self._correct_columns(cols)
+        cols = [col for col in cols if self.is_countable(col)]
         infos = [self.column(col).numerical_info() for col in cols]
         header = list(infos[0].keys())
         table = [list(el.values()) for el in infos]
@@ -201,74 +217,22 @@ class matrix_class():
     def categorical_info(self, norm = False, nan = True, cols = None, length = 20):
         cols = self._correct_columns(cols)
         cols = [col for col in cols if self.is_categorical(col)]
-        [self.column(col)._print_counts(norm = norm, nan = nan, length = length) for col in cols]
+        [self.column(col).print_counts(norm = norm, nan = nan, length = length) for col in cols]
 
     def get_metric(self, col, metric = 'mean', string = False):
         return self.column(col).get_metric(metric, string = string)
 
-    def _numerical_cross_counts(self, col1, col2, length = None):
-        bins = [self.select(b) for b in self.column(col1).bins(length)]
+    def _numerical_cross_counts(self, col1, col2, length = None, nan = True):
+        data12 = self.select(cols = [col1, col2])
+        bins = [data12.select(b) for b in data12.column(col1).bins(length, nan)]
         metrics = ['mean', 'std', 'length']
         counts = [[b.get_metric(col1, 'mean', True)] + [b.get_metric(col2, metric, True) for metric in metrics] for b in bins]
         table = tabulate(counts, [''] + metrics, decimals = 1)
         print(self.column_name(col1), 'vs', self.column_name(col2))
         print(table)
         
-
-    def _categorical_cross_counts(self, col1, col2, norm = False, length = None):
-        length = 10 if length is None else None
-        unique1 = list(self.unique(col1))[:length]; unique2 = list(self.unique(col2))[:length]
-        counts = [[self._cross_count(col1, col2, u1, u2, norm = norm) for u2 in unique2] for u1 in unique1]
-        table = [[unique1[i]] + counts[i] for i in range(len(counts))]
-        header = [self.column_name(col1) + ' / ' + self.column_name(col2)] + unique2
-        table = tabulate(table, header = header, decimals = 1)
-        print(table)
-
-    def _mixed_cross_counts(self, col1, col2, length = None):
-        metrics = ['mean', 'std', 'length']
-        dics = [self.get_encoding(col1, col2, metric, 0) for metric in metrics]
-        unique = [el[0] for el in sorted(dics[0].items(), key = lambda el: - el[1])][ : length]
-        to_string = lambda el: self.column(col2)._to_string(el)
-        values = [[u] + [to_string(dic[u]) for dic in dics] for u in unique]
-        table = tabulate(values, [''] + metrics, decimals = 1)
-        print(self.column_name(col1), 'vs', self.column_name(col2))
-        print(table)
-
-    def tab(self, col1, col2, norm = False, length = None):
-        c1 = self.column(col1)
-        length = c1._get_max_bins() if length is None and c1.is_countable() else length
-        if self.is_non_categorical(col1) and self.is_non_categorical(col2):
-            return self._numerical_cross_counts(col1, col2, length)
-        elif self.is_categorical(col1) and self.is_categorical(col2):
-            self._categorical_cross_counts(col1, col2, norm = norm, length = length)
-        elif self.is_categorical(col1) and self.is_non_categorical(col2):
-            self._mixed_cross_counts(col1, col2, length)
-        else:
-            print('Warning: Columns switched')
-            self._mixed_cross_counts(col2, col1, length)
-        
     def plot(self, col, bins = 100):
         self.column(col).plot(bins)
-
-    def cross_plot(self, col1, col2, length = 100, window = 4):
-        x, y = self.column(col1).get_section(nan = True), self.column(col2).get_section(nan = True)
-        plt.figure(0, figsize = (15, 8)); plt.clf()
-        plt.scatter(x, y, alpha = 0.5)
-        if self.is_numerical(col1) and self.is_numerical(col2):
-            x, y = remove_nan(x, y)
-            d = self.distinct(col1, 0)
-            if d < 100:
-                bins = self.column(col1).bins(d)
-                xf = [self.column(col1).select(b).mean() for b in bins]
-                yf = [self.column(col2).select(b).mean() for b in bins]
-            else:
-                xf, yf = smooth(x, y, length, window)
-            plt.plot(xf, yf, color = 'red')
-
-        plt.xlabel(self.column_name(col1)); plt.ylabel(self.column_name(col2))
-        plt.xticks(rotation = 90) if self.is_categorical(col1) else None
-        plt.tight_layout(); plt.pause(0.1); plt.show(block = 1); plt.close(); #plt.clf(); 
-
 
     def _tabulate_data(self, rows = None, cols = None, header = True, index = False, decimals = 1):
         header = self.columns(cols, index) if header else None
@@ -295,6 +259,9 @@ class matrix_class():
     def __repr__(self):
         return self._tabulate_info()
 
+    def __eq__(self, data):
+        return self._rows == data._rows and self._columns == data._columns and np.all([self.column(col) == data.column(col) for col in self.columns()], axis = 0)
+
     
     def __getitem__(self, cols):
         cols = [cols] if isinstance(cols, str) or isinstance(cols, int) else cols 
@@ -311,11 +278,11 @@ class matrix_class():
     def not_equal(self, col, value):
         return self.column(col).not_equal(value)
 
-    def is_nan(self, col):
-        return self.column(col).is_nan()
+    def is_nan(self, col, value = None):
+        return self.column(col).is_nan(value)
     
-    def is_not_nan(self, col):
-        return self.column(col).is_not_nan()
+    def is_not_nan(self, col, value = None):
+        return self.column(col).is_not_nan(value)
     
     def higher(self, col, value, equal = True):
         return self.column(col).higher(value, equal)
@@ -396,23 +363,74 @@ class matrix_class():
             elif self.is_numerical(col):
                 df[col] = df[col].astype('float64')
         return df
+    
+    def bins(self, col1, col2, bins = None, nan = True, string = False, width = 1, population = 0):
+        c1, c2 = self.column(col1), self.column(col2)
+        counts = c1.bins(bins = bins, nan = nan, string = string, width = width, population = population)
+        counts = {center: c2.select(counts[center]) for center in counts}
+        return counts
 
-    def get_encoding(self, col1, col2, metric = 'mean', string = False):
-        unique = list(self.unique(col1)); l = len(unique)
-        group = [self.select(self.equal(col1, u)).column(col2) for u in unique]
-        get_metric = lambda el: el.len() if metric == 'length' else el.sum() if metric == 'sum' else el.std() if metric == 'std' else el.mean() if metric in ['mean', 'order'] else el
-        values = [get_metric(el) for el in group]
-        values = ordering(values) if metric == 'order' else values
-        to_string = self.column(col1)._to_string
-        values = list(map(to_string, values)) if string else values
-        dictionary =  {unique[i]: values[i] for i in range(l)}
-        return dictionary
+    def bins_ordering(self, col1, col2, bins = None, nan = True, string = False, width = 1, population = 0):
+        counts = self.bins(col1, col2, bins = bins, nan = nan, string = string, width = width, population = population)
+        counts = [(k, v.mean()) for (k, v) in counts.items()]
+        K = range(len(counts))
+        keys, means = transpose(counts)
+        orders = np.argsort(np.argsort(means))
+        return {keys[i]: orders[i] for i in K}
+        #return np.array(means)
+        
+    def bins_metrics(self, col1, col2, metrics = None, bins = None, nan = True, string = False, width = 1, population = 0):
+        metrics = ['mean', 'std', 'length'] if metrics is None else metrics
+        counts =  self.bins(col1, col2, bins = bins, nan = nan, string = string, width = width, population = population)
+        return {count: [counts[count].get_metric(metric, string = False if metric == 'length' else string) for metric in metrics] for count in counts}
 
-    def encode(self, col1, col2, metric = 'mean', string = False):
-        d = self.get_encoding(col1, col2, metric, string)
-        self.to_numerical(col1, d)
-        return self
+    def get_encoding(self, col1, col2, metric = 'mean', nan = True, width = 1):
+        bins = self.distinct(col1, nan = True)
+        nn = NaT if self.is_datetime(col2) else NaN
+        if metric == 'order':
+            counts =  self.bins_ordering(col1, col2, bins = bins, nan = nan, width = width)
+        else:
+            counts = self.bins_metrics(col1, col2, metrics = [metric], bins = bins, nan = True, width = width)
+            counts = {count: counts[count][0] for count in counts}
+        counts.update({n: nn for n in self.column(col2)._nans}) if not nan else None
+        #counts.update({count: np.nan for count in counts if self.is_nan(col1, count)}) if not nan else None
+        return counts
+        
+    def encode(self, col1, col2, metric = 'mean', nan = True, width = 1):
+        counts = self.get_encoding(col1, col2, metric = metric, nan = nan, width = width)
+        self.to_numerical(col1, counts)        
 
+    def tab(self, col1, col2, bins = None, nan = True, width = 1, population = 0):
+        col2_countable = self.is_countable(col2)
+        metrics = ['mean', 'sem', 'length'] if col2_countable else ['mode', 'mode_frequency', 'length']
+        counts = self.bins_metrics(col1, col2, metrics = metrics, bins = bins, nan = nan, string = 1, width = width, population = population)
+        order = self.bins_ordering(col1, col2, bins = bins, nan = nan, string = 1, width = width, population = population)
+        #table = [[c] + counts[c] + [order[c]] for c in counts]
+        table = [[c] + counts[c] for c in counts]
+        table = sorted(table, key = lambda row: -row[-1]) if self.is_categorical(col1) else table
+        header = [self.column_name(col1)] + metrics# + ['order']
+        m = matrix_class()
+        return m._add_matrix([header] + table, True)
+        #table = tabulate(table, header, decimals = 1)
+        
+        print(table)
+
+    def tab_plot(self, col1, col2, bins = None, nan = True, width = 1, population = 0):
+        metrics = ['mean', 'sem']
+        counts = self.bins_metrics(col1, col2, metrics = metrics, bins = bins, nan = nan, width = width, population = population)
+        x = list(counts.keys())
+        y, e = transpose(list(counts.values()), 2)
+        xye = transpose([x, y, e])
+        xye = sorted(xye, key = lambda el: -el[1]) if self.is_categorical(col1) else xye
+        x, y, e = transpose([el for el in xye if np.nan not in el])[:3]
+        plt.figure(0, figsize = (15, 8)); plt.clf();
+        #plt.plot(x, y, color = 'red')
+        plt.errorbar(x, y, yerr = e)
+        plt.xlabel(self.column_name(col1)); plt.ylabel(self.column_name(col2))
+        plt.xticks(rotation = 90) if self.is_categorical(col1) else None
+        plt.tight_layout(); plt.pause(0.1); plt.show(block = 1); plt.close(); #plt.clf(); 
+    
+        
     def rescale(self, method = 'std', cols = None):
         new = self.copy()
         cols = self._correct_columns(cols)
@@ -444,8 +462,11 @@ class matrix_class():
         return self._rows
 
     def save(self, path, delimiter = ',', header = True, log = True):
-        text = '\n'.join([delimiter.join(row) for row in self.get_section()])
+        text = '\n'.join([delimiter.join(row) for row in self.get_section(string = True)])
         header = delimiter.join(self.columns()) + '\n' if header else ''
         text = header + text
         write_text(path, text, log)
         return self
+
+
+
