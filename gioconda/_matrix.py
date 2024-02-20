@@ -86,7 +86,9 @@ class matrix_class():
     def rename_column(self, col, name):
         delattr(self, self.column_name(col))
         self.column(col)._set_name(name)
+        self._columns_names = [d._name for d in self._data]
         setattr(self, name, self.column(name))
+        return self
 
     def columns(self, cols = None, index = False):
         cols = self.columns_indexes(self._correct_columns(cols))

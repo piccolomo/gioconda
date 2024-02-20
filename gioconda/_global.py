@@ -19,11 +19,14 @@ def read_csv(file_name, delimiter = ',', header = False, log = True):
 
 def read_xlsx(file_name, header = False, log = True):
     print('loading data') if log else None 
-    matrix = read_xlsx_(file_name, log = log)
-    data = matrix_class()
-    data._add_matrix(matrix, header)
+    matrices = read_xlsx_(file_name, log = log)
+    datas = matrices.copy()
+    for sheet in matrices:
+        data = matrix_class()
+        data._add_matrix(matrices[sheet], header)
+        datas[sheet] = data
     print('data loaded!\n') if log else None
-    return data
+    return datas
 
 def read_pickle(path, log = True):
     import pickle

@@ -25,17 +25,21 @@ def read_csv_(path, delimiter = ',', log = True):
 def read_xlsx_(path, log = True):
     print("reading excel file in", path) if log else None
     workbook = openpyxl.load_workbook(path)
-    sheet = workbook.active
-    matrix = []
-    for row in sheet.iter_rows(min_row = 1, max_row = sheet.max_row, min_col = 1, max_col = sheet.max_column):
-        line = []
-        for cell in row:
-            el = cell.value
-            el = el.strftime('%d/%m/%Y') if isinstance(el, datetime) else str(el)
-            line.append(el)
-        matrix.append(line)
+    names = workbook.sheetnames
+    sheets = [workbook[name] for name in names]
+    matrices = {}
+    for sheet in sheets:
+        matrix = []
+        for row in sheet.iter_rows(min_row = 1, max_row = sheet.max_row, min_col = 1, max_col = sheet.max_column):
+            line = []
+            for cell in row:
+                el = cell.value
+                el = el.strftime('%d/%m/%Y') if isinstance(el, datetime) else str(el)
+                line.append(el)
+            matrix.append(line)
+        matrices[sheet.title.strip()] = matrix
     workbook.close()
-    return matrix
+    return matrices
 
 def write_text(path, text, log = True):
     print("writing text in", path) if log else None
