@@ -44,11 +44,13 @@ class matrix_class():
     def _update_size(self):
         self._set_columns(len(self._data))
         self.set_rows(self.column(0)._rows if self._columns > 0 else 0)
+        self.size = (self._columns, self._rows)
 
 
     def set_rows(self, rows):
         self._rows = rows
         self._Rows = np.arange(self._rows)
+        self.length = self._rows
 
     def _set_columns(self, cols):
         self._columns = cols
@@ -247,16 +249,15 @@ class matrix_class():
         cols = self._Columns if cols is None else cols
         table = np.transpose([self.columns_indexes(cols), self.columns(cols), self._types(cols)])
         return tabulate(table, header = ['i', 'column', 'type'])
-
     def _tabulate_info(self, cols = None):
         return self._tabulate_dimensions() + 2 * nl + self._tabulate_types(cols)
 
     def print(self, rows = None, cols = None, header = True, index = False, decimals = 1):
-        rows = min(40, th()) if rows is None else rows
+        rows = min(51, th()) if rows is None else rows
         rows = (np.arange(rows) if rows >= 0 else np.arange(self._rows + rows, self._rows)) if isinstance(rows, int) else rows 
         rows = np.arange(rows) if isinstance(rows, int) else self._correct_rows(rows)
         print(self._tabulate_data(rows, cols, header, index, decimals))
-        print(nl + self._tabulate_dimensions())
+        #print(nl + self._tabulate_dimensions())
 
     def __repr__(self):
         return self._tabulate_info()
@@ -404,12 +405,12 @@ class matrix_class():
 
     def tab(self, col1, col2, bins = None, nan = True, width = 1, population = 0):
         col2_countable = self.is_countable(col2)
-        metrics = ['mean', 'sem', 'length'] if col2_countable else ['mode', 'mode_frequency', 'length']
+        metrics = ['mean', 'std', 'length'] if col2_countable else ['mode', 'mode_frequency', 'length']
         counts = self.bins_metrics(col1, col2, metrics = metrics, bins = bins, nan = nan, string = 1, width = width, population = population)
         order = self.bins_ordering(col1, col2, bins = bins, nan = nan, string = 1, width = width, population = population)
-        #table = [[c] + counts[c] + [order[c]] for c in counts]
-        table = [[c] + counts[c] for c in counts]
+        table = [[c] + counts[c] + [order[c]] for c in counts]
         table = sorted(table, key = lambda row: -row[-1]) if self.is_categorical(col1) else table
+        #table = [[c] + counts[c] for c in counts]
         header = [self.column_name(col1)] + metrics# + ['order']
         m = matrix_class()
         return m._add_matrix([header] + table, True)
@@ -417,8 +418,9 @@ class matrix_class():
         
         print(table)
 
-    def tab_plot(self, col1, col2, bins = None, nan = True, width = 1, population = 0):
-        metrics = ['mean', 'sem']
+    def tab_plot(self, col1, col2, bins = None, nan = True, width = 1, population = 0, error = True):
+        metrics = ['mean', 'std']
+        nan = False if self.is_countable(col1) else nan
         counts = self.bins_metrics(col1, col2, metrics = metrics, bins = bins, nan = nan, width = width, population = population)
         x = list(counts.keys())
         y, e = transpose(list(counts.values()), 2)
@@ -427,7 +429,7 @@ class matrix_class():
         x, y, e = transpose([el for el in xye if np.nan not in el])[:3]
         plt.figure(0, figsize = (15, 8)); plt.clf();
         #plt.plot(x, y, color = 'red')
-        plt.errorbar(x, y, yerr = e)
+        plt.errorbar(x, y, yerr = e) if error else plt.plot(x, y)
         plt.xlabel(self.column_name(col1)); plt.ylabel(self.column_name(col2))
         plt.xticks(rotation = 90) if self.is_categorical(col1) else None
         plt.tight_layout(); plt.pause(0.1); plt.show(block = 1); plt.close(); #plt.clf(); 

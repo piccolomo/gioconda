@@ -3,7 +3,7 @@ from matplotlib import pyplot as plt
 from random import sample
 from sklearn.preprocessing import StandardScaler as ss
 
-metrics = ['min', 'max', 'mean', 'sum', 'length', 'mode', 'mode_frequency', 'median', 'std', 'sem']
+metrics = ['min', 'max', 'mean', 'sum', 'length', 'mode', 'mode_frequency', 'median', 'std', 'fwhm', 'sem']
 
 class data_class():
     def __init__(self, data = [], name = '', index = 'none'):
@@ -48,15 +48,10 @@ class data_class():
         return np.array([self.string_to_datetime64(el) for el in strings], dtype = np.datetime64)
 
     def timedelta64_to_number(self, delta):
-        if self.is_nan(delta):
-            return NaN
-        #delta = delta.item().timestamp()
-        delta = delta.item().total_seconds()
-        index = forms.index(self._delta_form)
-        return delta / div[index]
+        return NaN if self.is_nan(delta) else timedelta64_to_number(delta, self._delta_form)
 
     def timedelta64_to_numbers(self, data):
-        return np.array([timedelta64_to_number(el) for el in data])
+        return np.array([self.timedelta64_to_number(el) for el in data])
 
     def timedelta64_to_string(self, delta):
         return str(round(self.timedelta64_to_number(delta), 1))
@@ -101,23 +96,29 @@ class data_class():
         return counts[value] if value in counts else 0
         #return 100 * count / self.rows if norm else count
     
-    def count_nan(self, norm = False):
+    def count_nan(self, norm = False, string = False):
         c = np.count_nonzero(self._are_nan(self._data))
-        return NaN if self._rows == 0 else 100 * c / self._rows if norm else c
+        out = NaN if self._rows == 0 else 100 * c / self._rows if norm else c
+        return self._to_string(out) if string else out
 
     #@mem
     def unique(self, nan = True, string = False):
-        return list(self.counts(False, nan = nan, string = string).keys())
+        counts = self.counts(False, nan = nan, string = string)
+        return sorted(counts.keys(), key = counts.get, reverse = True)
 
     def distinct(self, nan = True):
         return len(self.unique(nan))
 
-    def mode(self):
-        unique = self.unique(0)
-        return unique[0] if len(unique) > 0 else NaN
+    def mode(self, nan = False, string = False):
+        unique = self.unique(nan = nan)
+        out = unique[0] if len(unique) > 0 else NaN
+        return self._to_string(out) if string else out
 
-    def mode_frequency(self):
-        return  self.counts(1)[self.mode()] if self._rows > 0 else NaN
+
+    def mode_frequency(self, nan = False, string = False):
+        out = self.counts(norm = True, nan = True)[self.mode(nan = nan)] if self._rows > 0 else NaN
+        return self._to_string(out) if string else out
+
 
 
     def to_categorical(self):
@@ -194,27 +195,30 @@ class data_class():
         self._set_data(data)
         return self
 
-    def len(self):
-        return self._rows
+    def len(self, nan = False, string = False):
+        out = self._rows if nan == False else np.count_nonzero(self.is_not_nan())
+        return self._to_string(out) if string else out
 
-    def sum(self):
-        data = self.get_section(nan = False); l = len(data)
-        return NaN if l == 0 or self.is_uncountable() else mean_datetime64(data) if self.is_datetime() else np.sum(data)
+    def sum(self, nan = False, string = False):
+        data = self.get_section(nan = nan); l = len(data)
+        out = NaN if l == 0 or self.is_uncountable() else mean_datetime64(data) if self.is_datetime() else np.sum(data)
+        return self._to_string(out) if string else out
         
-    def min(self, string = False):
-        data = self.get_section(nan = False); l = len(data)
-        m = NaN if l == 0 or self.is_uncountable() else np.min(data)
-        return m
+    def min(self,  nan = False, string = False):
+        data = self.get_section(nan = nan); l = len(data)
+        out = NaN if l == 0 or self.is_uncountable() else np.min(data)
+        return self._to_string(out) if string else out
     
-    def max(self):
-        data = self.get_section(nan = False); l = len(data)
-        m = NaN if l == 0 or self.is_uncountable() else np.max(data)
-        return m
+    def max(self, nan = False, string = False):
+        data = self.get_section(nan = nan); l = len(data)
+        out = NaN if l == 0 or self.is_uncountable() else np.max(data)
+        return self._to_string(out) if string else out
 
-    def span(self):
-        m, M = self.min(), self.max()
+    def span(self, nan = False, string = False):
+        m, M = self.min(nan = nan), self.max(nan = nan)
         s = M - m
-        return self.timedelta64_to_number(s) if self.is_datetime() else s
+        out = self.timedelta64_to_number(s) if self.is_datetime() else s
+        return self._to_string(out) if string else out
 
     def max_diff(self):
         data = self.get_section(nan = False); 
@@ -222,39 +226,50 @@ class data_class():
         data = data[np.nonzero(data)]
         l = len(data)
         m = NaN if l == 0 or self.is_uncountable() else np.max(data)
-        return m
+        return self._to_string(out) if string else out
 
-    def std(self):
-        data = self.get_section(nan = False); l = len(data)
-        return NaN if l == 0 or self.is_uncountable() else self.timedelta64_to_number(std_datetime64(data)) if self.is_datetime() else np.std(data)
-    
-    def sem(self):
-        return self.std() / np.sqrt(self._rows)
-    
-    def density(self):
-        std = np.nan if self.is_nan(self.std()) else self.std() if self.is_datetime() else self.std()
-        span = np.nan if self.is_nan(self.span()) else  self.span() if self.is_datetime() else self.span()
-        return np.nan if self.is_nan(std) or self.is_nan(span) else 100 * std / span if span != 0 else np.inf
+    def std(self, nan = False, string = False):
+        data = self.get_section(nan = nan); l = len(data)
+        out = NaN if l == 0 or self.is_uncountable() else self.timedelta64_to_number(std_datetime64(data)) if self.is_datetime() else np.std(data)
+        return self._to_string(out) if string else out
 
-    def mean(self):
-        data = self.get_section(nan = False); l = len(data)
-        return NaN if l == 0 or self.is_uncountable() else mean_datetime64(data) if self.is_datetime() else np.mean(data)
+    def sem(self, nan = False, string = False):
+        out = self.std(nan = nan) / np.sqrt(self.len(nan = nan))
+        return self._to_string(out) if string else out
 
-    def median(self):
-        data = self.get_section(nan = False); l = len(data)
-        return NaN if l == 0 or self.is_uncountable() else median_datetime64(data) if self.is_datetime() else np.median(data)
+    def fwhm(self, nan = False, string = False):
+        out = 2 * np.sqrt(2 * np.log(2)) * self.std(nan = nan)
+        return self._to_string(out) if string else out
 
-    def percentile(self, q):
-        data = self.get_section(nan = False); l = len(data)
-        return NaN if l == 0 or self.is_uncountable() else np.percentile(data, q)
+    def density(self, nan = False, string = False):
+        std = self.std(nan = nan)
+        span = self.span(nan = nan)
+        out = np.nan if self.is_nan(std) or self.is_nan(span) else 100 * std / span if span != 0 else np.inf
+        return self._to_string(out) if string else out
 
-    def iqr(self):
-        return self.percentile(74) - self.percentile(25)
+    def mean(self, nan = False, string = False):
+        data = self.get_section(nan = nan); l = len(data)
+        out = NaN if l == 0 or self.is_uncountable() else mean_datetime64(data) if self.is_datetime() else np.mean(data)
+        return self._to_string(out) if string else out
 
-    def get_metric(self, metric = 'mean', string = False):
-        functions = [self.min, self.max, self.mean, self.sum, self.__len__, self.mode, self.mode_frequency, self.median, self.std, self.sem]
+    def median(self, nan = False, string = False):
+        data = self.get_section(nan = nan); l = len(data)
+        out = NaN if l == 0 or self.is_uncountable() else median_datetime64(data) if self.is_datetime() else np.median(data)
+        return self._to_string(out) if string else out
+
+    def percentile(self, q, nan = False, string = False):
+        data = self.get_section(nan = nan); l = len(data)
+        out = NaN if l == 0 or self.is_uncountable() else np.percentile(data, q)
+        return self._to_string(out) if string else out
+
+    def iqr(self, nan = False, string = False):
+        out = self.percentile(74, nan = nan) - self.percentile(25, nan = nan)
+        return self._to_string(out) if string else out
+
+    def get_metric(self, metric = 'mean', nan = False, string = False):
+        functions = [self.min, self.max, self.mean, self.sum, self.__len__, self.mode, self.mode_frequency, self.median, self.std, self.fwhm, self.sem]
         res = functions[metrics.index(metric)]()
-        return self._to_string(res) if string else res 
+        return res(nan = nan, string = string)
 
     def _get_numerical_data(self):
         data = self.get_section(nan = False)
@@ -286,8 +301,7 @@ class data_class():
 
     #@mem(maxsize=None)
     def numerical_info(self):
-        info = {'min': self.min(), 'max': self.max(), 'span': self.span(), 'nan': self.count_nan(0), 'mean': self.mean(), 'median': self.median(), 'mode': self.mode(), 'mode_frequency': self.mode(), 'std': self.std(), 'sem': self.sem(), 'iqr': self.iqr(), 'density': self.density()}
-        return {k : self._to_string(info[k]) for k in info.keys()}
+        return {'min': self.min(string = 1), 'max': self.max(string = 1), 'span': self.span(string = 1), 'nan': self.count_nan(norm = 0, string = 1), 'mean': self.mean(string = 1), 'median': self.median(string = 1), 'mode': self.mode(string = 1), 'mode_frequency': self.mode_frequency(string = 1), 'std': self.std(string = 1), 'fwhm': self.fwhm(string = 1), 'sem': self.sem(string = 1), 'iqr': self.iqr(string = 1), 'density': self.density(string = 1)}
 
     def datetime_info(self):
         return {'form': self._form, 'delta_form': self._delta_form}
@@ -329,8 +343,7 @@ class data_class():
         return out
 
     def _to_string(self, el):
-         #'nan' if self.is_nan(el) else
-        return  el.item().strftime(self._form) if isinstance(el, np.datetime64) else self.timedelta64_to_string(el) if isinstance(el, np.timedelta64) else str(round(el, 2)) if is_number(el) else str(el)
+        return 'nan' if self.is_nan(el) else el.item().strftime(self._form) if isinstance(el, np.datetime64) else self.timedelta64_to_string(el) if isinstance(el, np.timedelta64) else str(round(el, 2)) if is_number(el) else str(el)
 
     def _to_strings(self, data):
         return np.array([self._to_string(el) for el in data])
@@ -609,6 +622,12 @@ def dates_to_seconds(dates):
 div = [1, 60, 60, 24, 30.44, 12]
 div = list(map(float, np.cumprod(div)))
 forms = ['seconds', 'minutes', 'hours', 'days', 'months', 'years']
+
+def timedelta64_to_number(delta, form):
+    #delta = delta.item().timestamp()
+    delta = delta.item().total_seconds()
+    index = forms.index(form)
+    return delta / div[index]
 
 time_to_string = lambda date, form: date.strftime(form)
 

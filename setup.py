@@ -12,7 +12,7 @@ setup(
     author = "Savino Piccolomo",
     author_email = "piccolomo@gmail.com",
     name = 'gioconda',
-    version='1.7',
+    version='1.8b',
     description = 'handles tabular data',
     long_description = README,
     long_description_content_type = "text/markdown",  
